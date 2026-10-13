@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+pillow
+# optional, install what you need
+# rembg
+# opencv-python-headless
+# pytesseract
+# torch
+# diffusers
+# argostranslate
