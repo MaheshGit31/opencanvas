@@ -1,0 +1,3 @@
+{"format":"opencanvas-template","version":1,"name":"Hello card","cats":["social"],"w":1080,"h":1080,"bg":{"type":"linear","angle":135,"stops":[{"o":0,"c":"#ffecd2"},{"o":1,"c":"#fcb69f"}]},"elements":[
+{"id":"h1","type":"text","name":"Title","x":90,"y":380,"w":900,"h":240,"rot":0,"opacity":1,"runs":[{"t":"Hello there"}],"fs":150,"fw":800,"ff":"Poppins","align":"center","fills":[{"type":"solid","color":"#5b2a1c","opacity":1,"visible":true}],"autoH":true,"anim":{},"timing":{"start":0,"end":null},"shadows":[],"stroke":null,"blur":0,"locked":false,"hidden":false,"flipX":false,"flipY":false,"link":"","alt":"","tags":[],"lh":1.1,"ls":0,"ws":0,"it":false,"ul":false,"st":false,"tf":"none","valign":"top","pspace":0,"curve":0,"bg":null}
+]}
