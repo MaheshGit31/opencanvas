@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:14px system-ui,sans-serif;margin:0;padding:14px;color:#222}@media(prefers-color-scheme:dark){body{color:#eee}}
+select,button,input{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid #8884;background:#8881;color:inherit;width:100%;box-sizing:border-box;margin-bottom:8px}button{background:#2563eb;color:#fff;border:0;font-weight:600;cursor:pointer}
+#pv{width:100%;border-radius:12px;background:#fff;margin-bottom:10px}label{display:block;margin:6px 0 2px;opacity:.7;font-size:12px}</style>
+<div id="pv"></div>
+<label>Shape</label><select id="shape"><option>dots</option><option>squares</option><option>triangles</option><option>plus</option><option>waves</option></select>
+<label>Size</label><input id="size" type="range" min="10" max="80" value="30"><label>Spacing</label><input id="gap" type="range" min="0" max="60" value="20">
+<label>Color</label><input id="col" type="color" value="#2563eb"><label>Background</label><input id="bg" type="color" value="#ffffff">
+<button id="ins">Add to design</button>
+<script>
+let brand=[];OpenCanvas.palette().then(p=>{brand=p;col.value=p[0]||col.value}).catch(()=>{});
+function svg(){const s=+size.value,g=+gap.value,step=s+g,N=Math.ceil(600/step)+1;let b="";
+for(let y=0;y<N;y++)for(let x=0;x<N;x++){const cx=x*step+s/2+(shape.value==="triangles"&&y%2?step/2:0),cy=y*step+s/2,c=col.value;
+if(shape.value==="dots")b+=`<circle cx="${cx}" cy="${cy}" r="${s/2}" fill="${c}"/>`;
+else if(shape.value==="squares")b+=`<rect x="${cx-s/2}" y="${cy-s/2}" width="${s}" height="${s}" rx="${s/6}" fill="${c}"/>`;
+else if(shape.value==="triangles")b+=`<path d="M${cx} ${cy-s/2}L${cx+s/2} ${cy+s/2}L${cx-s/2} ${cy+s/2}Z" fill="${c}"/>`;
+else if(shape.value==="plus")b+=`<path d="M${cx-s/6} ${cy-s/2}h${s/3}v${s/3}h${s/3}v${s/3}h-${s/3}v${s/3}h-${s/3}v-${s/3}h-${s/3}v-${s/3}h${s/3}Z" fill="${c}"/>`;
+else b+=`<path d="M${cx-s/2} ${cy}q${s/4} -${s/2} ${s/2} 0t${s/2} 0" fill="none" stroke="${c}" stroke-width="${Math.max(2,s/8)}" stroke-linecap="round"/>`}
+return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"><rect width="600" height="600" fill="${bg.value}"/>${b}</svg>`}
+function draw(){pv.innerHTML=svg();pv.firstChild.style.width="100%";pv.firstChild.style.height="auto"}
+document.querySelectorAll("input,select").forEach(e=>e.oninput=draw);draw();
+ins.onclick=()=>OpenCanvas.insertSVG(svg(),"Pattern");
+</script>
