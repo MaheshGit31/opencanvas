@@ -67,7 +67,7 @@
   const DEF = {
     mode: 'simple', theme: 'dark', accent: '#2563eb', radius: 10, density: 'comfortable', uiScale: 100, lang: 'en', sidebarSide: 'left', canvasBg: '',
     ai: { where: 'device', serverUrl: '', apiKey: '' }, translator: 'google', translatorUrl: '', snap: true, snapGrid: false, proportional: true, autosave: true, keymap: 'opencanvas', keys: {},
-    registries: ['community/registry.json', 'gh:OpenCanvasApp/community'], safeApps: true, showTips: true, showRulers: false, wheel: 'pan', checker: true
+    registries: ['community/registry.json'], safeApps: true, showTips: true, showRulers: false, wheel: 'pan', checker: true
   };
   const SET = OC.settings = Object.assign({}, DEF, OC.ls.get('settings', {}));
   SET.ai = Object.assign({}, DEF.ai, SET.ai);

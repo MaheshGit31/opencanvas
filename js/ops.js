@@ -39,7 +39,7 @@
   };
 
   /* clipboard */
-  Ops.copy = function () { const els = ordered(selEls()); if (!els.length) return; S.clipboard = { els: U.clone(els), page: OC.sel.page().id }; try { navigator.clipboard.writeText('opencanvas:' + els.length + ' element' + (els.length > 1 ? 's' : '')); } catch (e) { } U.toast(els.length > 1 ? 'Copied ' + els.length : 'Copied', 1200); };
+  Ops.copy = function () { const els = ordered(selEls()); if (!els.length) return; S.clipboard = { els: U.clone(els), page: OC.sel.page().id }; try { U.copyText('opencanvas:' + els.length + ' element' + (els.length > 1 ? 's' : '')); } catch (e) { } U.toast(els.length > 1 ? 'Copied ' + els.length : 'Copied', 1200); };
   Ops.cut = function () { Ops.copy(); Ops.del(); };
   Ops.paste = function () {
     if (!S.clipboard) return; const pg = OC.page(); const els = Ops.cloneEls(S.clipboard.els); const dup = pg.elements.some(e => els.some(c => Math.abs(c.x - e.x) < 1 && Math.abs(c.y - e.y) < 1));

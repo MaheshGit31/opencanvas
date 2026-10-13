@@ -115,7 +115,7 @@
   /* ---------- zoom hud ---------- */
   let zoomEl;
   function buildZoomHud() {
-    zoomEl = h('div.zoomhud', { 'data-keep-edit': '' }, UI.iconBtn('zoom-out', 'Zoom out', () => E.setZoom(S.zoom / 1.25)), h('button.zoom-pct', { onclick: () => UI.menu([[.25, '25%'], [.5, '50%'], [1, '100%'], [2, '200%']].map(z => ({ label: z[1], onclick: () => E.setZoom(z[0]) })).concat([{ sep: 1 }, { label: 'Fit page', keys: k('zoomFit'), onclick: () => E.fit() }, { label: 'Fit selection', keys: k('zoomSel'), onclick: () => E.fitSelection() }]), 0, 0, { anchor: zoomEl.children[1] }) }, '100%'), UI.iconBtn('zoom-in', 'Zoom in', () => E.setZoom(S.zoom * 1.25)), UI.iconBtn('maximize', 'Fit page', () => E.fit()));
+    zoomEl = h('div.zoomhud', { 'data-keep-edit': '' }, UI.iconBtn('zoom-out', 'Zoom out', () => E.setZoom(S.zoom / 1.25, null, null, true)), h('button.zoom-pct', { onclick: () => UI.menu([[.25, '25%'], [.5, '50%'], [1, '100%'], [2, '200%']].map(z => ({ label: z[1], onclick: () => E.setZoom(z[0], null, null, true) })).concat([{ sep: 1 }, { label: 'Fit page', keys: k('zoomFit'), onclick: () => E.fit(undefined, true) }, { label: 'Fit selection', keys: k('zoomSel'), onclick: () => E.fitSelection() }]), 0, 0, { anchor: zoomEl.children[1] }) }, '100%'), UI.iconBtn('zoom-in', 'Zoom in', () => E.setZoom(S.zoom * 1.25, null, null, true)), UI.iconBtn('maximize', 'Fit page', () => E.fit(undefined, true)));
     refs.canvas.append(zoomEl);
   }
   function updateZoomHud() { if (zoomEl) zoomEl.children[1].textContent = Math.round(S.zoom * 100) + '%'; }
@@ -146,7 +146,7 @@
     if (kind === 'page' || !has) {
       UI.menu([{ label: 'Paste', icon: 'clipboard', keys: K('paste'), disabled: !S.clipboard, onclick: () => O.paste() }, { label: 'Select all', keys: K('selectAll'), onclick: () => C.run('selectAll') }, { sep: 1 },
         { label: 'Add page', icon: 'plus', keys: K('addPage'), onclick: () => O.addPage() }, { label: 'Duplicate page', icon: 'copy', onclick: () => O.duplicatePage() }, { label: S.project.pages[S.pageIdx].locked ? 'Unlock page' : 'Lock page', icon: 'lock', onclick: () => O.lockPage(S.pageIdx) }, { label: 'Delete page', icon: 'trash-2', onclick: () => O.deletePage() }, { sep: 1 },
-        { label: 'Comment', icon: 'message-square-plus', keys: K('comment'), onclick: () => O.addComment(null, { x: p.px, y: p.py }) }, { label: 'Fit page', onclick: () => E.fit() }], x, y); return;
+        { label: 'Comment', icon: 'message-square-plus', keys: K('comment'), onclick: () => O.addComment(null, { x: p.px, y: p.py }) }, { label: 'Fit page', onclick: () => E.fit(undefined, true) }], x, y); return;
     }
     const locked = els.every(e => e.locked), lpos = els.every(e => e.lockPos);
     const items = [

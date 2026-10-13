@@ -53,8 +53,8 @@
   /* tools */
   [['select', 'Select', 'v'], ['hand', 'Hand', 'h'], ['text', 'Text', 't'], ['rect', 'Rectangle', 'r'], ['ellipse', 'Ellipse', 'o'], ['line', 'Line', 'l'], ['pen', 'Pen', 'p'], ['pencil', 'Pencil', 'b'], ['frame', 'Frame', 'f'], ['sticky', 'Sticky note', 'n'], ['comment', 'Comment tool', 'c'], ['polygon', 'Polygon', 'y'], ['star', 'Star', 'shift+8']].forEach(([id, l, k]) => d('tool_' + id, l, [k], () => E.setTool(id), { group: 'Tools' }));
   /* view */
-  d('zoomIn', 'Zoom in', ['mod+=', 'mod+shift+='], () => E.setZoom(S.zoom * 1.25), { group: 'View', scope: anyDoc }); d('zoomOut', 'Zoom out', ['mod+-'], () => E.setZoom(S.zoom / 1.25), { group: 'View', scope: anyDoc });
-  d('zoomFit', 'Fit page', ['mod+0', 'shift+1'], () => E.fit(), { group: 'View' }); d('zoom100', 'Zoom to 100%', ['mod+1'], () => E.setZoom(1), { group: 'View' }); d('zoomSel', 'Zoom to selection', ['shift+2'], () => E.fitSelection(), { group: 'View' });
+  d('zoomIn', 'Zoom in', ['mod+=', 'mod+shift+='], () => E.setZoom(S.zoom * 1.25, null, null, true), { group: 'View', scope: anyDoc }); d('zoomOut', 'Zoom out', ['mod+-'], () => E.setZoom(S.zoom / 1.25, null, null, true), { group: 'View', scope: anyDoc });
+  d('zoomFit', 'Fit page', ['mod+0', 'shift+1'], () => E.fit(undefined, true), { group: 'View' }); d('zoom100', 'Zoom to 100%', ['mod+1'], () => E.setZoom(1, null, null, true), { group: 'View' }); d('zoomSel', 'Zoom to selection', ['shift+2'], () => E.fitSelection(), { group: 'View' });
   d('nextPage', 'Next page', ['pagedown'], () => { OC.setPageIdx(S.pageIdx + 1); E.focusPage(S.pageIdx); }, { group: 'Pages' }); d('prevPage', 'Previous page', ['pageup'], () => { OC.setPageIdx(S.pageIdx - 1); E.focusPage(S.pageIdx); }, { group: 'Pages' });
   d('addPage', 'Add page', ['mod+enter'], () => O.addPage(), { group: 'Pages' }); d('dupPage', 'Duplicate page', [], () => O.duplicatePage(), { group: 'Pages' }); d('delPage', 'Delete page', [], () => O.deletePage(), { group: 'Pages' });
   d('toggleGrid', 'Toggle grid', ["mod+'"], () => { S.project.grid.show = !S.project.grid.show; OC.render.invalidate(); }, { group: 'View' });

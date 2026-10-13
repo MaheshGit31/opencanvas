@@ -159,4 +159,11 @@
   UI.empty = text => h('div.empty', T(text));
   UI.spinner = () => h('div.spinner');
   UI.thumbCard = (src, label, onclick, o = {}) => h('button.card' + (o.cls ? '.' + o.cls : ''), { onclick, draggable: !!o.drag, ondragstart: o.drag ? e => { e.dataTransfer.setData('application/x-opencanvas', JSON.stringify(o.drag)); } : null, title: label || '' }, h('div.card-img', { style: src ? `background-image:url("${src}")` : '' }, o.overlay || ''), label ? h('span', label) : null);
+
+  /* small interaction polish: chip rows scroll with the wheel and fade at the edge */
+  document.addEventListener('wheel', e => { const c = e.target.closest && e.target.closest('.chips.scroll'); if (c && Math.abs(e.deltaY) > Math.abs(e.deltaX) && c.scrollWidth > c.clientWidth) { c.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  const edge = c => c.classList.toggle('at-end', c.scrollLeft + c.clientWidth >= c.scrollWidth - 4);
+  document.addEventListener('scroll', e => { if (e.target.classList && e.target.classList.contains('chips')) edge(e.target); }, true);
+  new MutationObserver(() => document.querySelectorAll('.chips.scroll').forEach(edge)).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('click', e => { const ch = e.target.closest && e.target.closest('.chips.scroll .chip'); if (ch) setTimeout(() => ch.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }), 0); });
 })();

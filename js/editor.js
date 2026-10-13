@@ -34,16 +34,45 @@
   E.geo = el => (S.timelineOpen ? R.resolve(el, S.time) : el);
   E.pgToScreen = (pg, x, y) => E.worldToScreen(pg._x + x, pg._y + y);
 
-  E.setZoom = function (z, cx, cy) {
-    z = U.clamp(z, .02, 40); if (cx == null) { cx = W / 2; cy = H / 2; } const w = E.screenToWorld(cx, cy); S.zoom = z; S.panX = cx - w.x * z; S.panY = cy - w.y * z; OC.bus.emit('zoom'); R.invalidate(); trackPage();
+  /* view changes glide instead of jumping */
+  const RM = () => OC.settings.reduceMotion || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let glideRaf = 0;
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  function viewTo(z, px, py, anim) {
+    cancelAnimationFrame(glideRaf); glideRaf = 0;
+    if (!anim || RM() || Math.abs(z - S.zoom) + Math.abs(px - S.panX) + Math.abs(py - S.panY) < .5) { S.zoom = z; S.panX = px; S.panY = py; OC.bus.emit('zoom'); R.invalidate(); trackPage(); return; }
+    const z0 = S.zoom, x0 = S.panX, y0 = S.panY, t0 = performance.now(), dur = 260;
+    // interpolate zoom in log space so it feels even
+    const lz0 = Math.log(z0), lz1 = Math.log(z);
+    const step = now => { const t = Math.min(1, (now - t0) / dur), k = ease(t); S.zoom = Math.exp(lz0 + (lz1 - lz0) * k); S.panX = x0 + (px - x0) * k; S.panY = y0 + (py - y0) * k; OC.bus.emit('zoom'); R.invalidate(); if (t < 1) glideRaf = requestAnimationFrame(step); else { glideRaf = 0; trackPage(); } };
+    glideRaf = requestAnimationFrame(step);
+  }
+  E.stopGlide = () => { cancelAnimationFrame(glideRaf); glideRaf = 0; };
+  E.setZoom = function (z, cx, cy, anim) {
+    z = U.clamp(z, .02, 40); if (cx == null) { cx = W / 2; cy = H / 2; } const w = E.screenToWorld(cx, cy);
+    viewTo(z, cx - w.x * z, cy - w.y * z, anim);
   };
-  E.fit = function (pgIdx) {
+  /* wheel zoom eases toward a target so trackpad and mouse steps feel smooth */
+  let zt = 0, zax = 0, zay = 0, zRaf = 0;
+  E.smoothZoom = function (k, cx, cy) {
+    cancelAnimationFrame(glideRaf); glideRaf = 0;
+    if (!zRaf) zt = S.zoom; zt = U.clamp(zt * k, .02, 40); zax = cx; zay = cy;
+    if (RM()) { zRaf = 0; return E.setZoom(zt, cx, cy); }
+    if (zRaf) return;
+    const tick = () => {
+      const d = zt - S.zoom; if (Math.abs(Math.log(zt / S.zoom)) < .002) { E.setZoom(zt, zax, zay); zRaf = 0; return; }
+      E.setZoom(S.zoom * Math.pow(zt / S.zoom, .32), zax, zay); zRaf = requestAnimationFrame(tick);
+    };
+    zRaf = requestAnimationFrame(tick);
+  };
+  E.fit = function (pgIdx, anim) {
     resize(); D.layoutPages(); const pgs = S.project.pages.filter(p => !p.infinite); let b;
-    if (!pgs.length) { S.zoom = 1; S.panX = W / 2; S.panY = H / 2; OC.bus.emit('zoom'); R.invalidate(); return; }
+    if (!pgs.length) return viewTo(1, W / 2, H / 2, anim);
     const pg = pgIdx != null ? S.project.pages[pgIdx] : OC.page(); b = pg && !pg.infinite ? { x: pg._x, y: pg._y, w: pg.w, h: pg.h } : { x: 0, y: 0, w: pgs[0].w, h: pgs[0].h };
-    const pad = 70; const z = Math.min((W - pad * 2) / b.w, (H - pad * 2 - 40) / b.h, 4); S.zoom = Math.max(z, .02); S.panX = (W - b.w * S.zoom) / 2 - b.x * S.zoom; S.panY = (H - b.h * S.zoom) / 2 - b.y * S.zoom + 14; OC.bus.emit('zoom'); R.invalidate();
+    const padX = 70, top = 64, bottom = 112; const z = Math.max(Math.min((W - padX * 2) / b.w, (H - top - bottom) / b.h, 4), .02);
+    viewTo(z, (W - b.w * z) / 2 - b.x * z, top + (H - top - bottom - b.h * z) / 2 - b.y * z, anim);
   };
-  E.fitSelection = function () { const els = OC.sel.els(); if (!els.length) return E.fit(); const pg = OC.sel.page(); const b = D.boundsOf(els.map(e => ({ x: D.toPage(e.id, e.w / 2, e.h / 2).x - e.w / 2, y: D.toPage(e.id, e.w / 2, e.h / 2).y - e.h / 2, w: e.w, h: e.h, rot: e.rot }))); const pad = 120; const z = Math.min((W - pad * 2) / b.w, (H - pad * 2) / b.h, 8); S.zoom = z; S.panX = W / 2 - (pg._x + b.x + b.w / 2) * z; S.panY = H / 2 - (pg._y + b.y + b.h / 2) * z; OC.bus.emit('zoom'); R.invalidate(); };
+  E.fitSelection = function () { const els = OC.sel.els(); if (!els.length) return E.fit(undefined, true); const pg = OC.sel.page(); const b = D.boundsOf(els.map(e => ({ x: D.toPage(e.id, e.w / 2, e.h / 2).x - e.w / 2, y: D.toPage(e.id, e.w / 2, e.h / 2).y - e.h / 2, w: e.w, h: e.h, rot: e.rot }))); const pad = 120; const z = Math.min((W - pad * 2) / b.w, (H - pad * 2) / b.h, 8); viewTo(z, W / 2 - (pg._x + b.x + b.w / 2) * z, H / 2 - (pg._y + b.y + b.h / 2) * z, true); };
   E.focusPage = function (i) {
     const pg = S.project.pages[i]; if (!pg) return; S.pageIdx = i; D.layoutPages();
     if (pg.infinite) { S.panX = W / 2; S.panY = H / 2; } else { const cx = pg._x + pg.w / 2, cy = pg._y + pg.h / 2; S.panX = W / 2 - cx * S.zoom; S.panY = H / 2 - cy * S.zoom; if (pg.h * S.zoom > H || pg.w * S.zoom > W) return E.fit(i); }
@@ -132,6 +161,7 @@
   }
   E.info = info;
   function onDown(e) {
+    E.stopGlide();
     over.focus({ preventScroll: true }); over.setPointerCapture(e.pointerId); if (S.editing) E.endEdit(); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2 && e.pointerType === 'touch') { S.drag = null; const a = [...pts.values()]; pinch = { d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), z: S.zoom, cx: (a[0].x + a[1].x) / 2, cy: (a[0].y + a[1].y) / 2, px: S.panX, py: S.panY }; return; }
     const p = info(e); closeMenus();
@@ -172,7 +202,7 @@
   function onWheel(e) {
     e.preventDefault(); const r = stage.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
     if (OC.threed && OC.threed.active) { const q = info(e); const el = OC.doc.get(OC.threed.active); const lp = el && OC.doc.toLocal(el.id, q.px, q.py); if (lp && lp.x >= 0 && lp.y >= 0 && lp.x <= el.w && lp.y <= el.h) { e.preventDefault(); OC.threed.pointer('wheel', { dy: e.deltaY }); return; } }
-    if (e.ctrlKey || e.metaKey || OC.settings.wheel === 'zoom') { const k = Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0025)); if (S.cropEl) { cropWheel(k); return; } E.setZoom(S.zoom * k, sx, sy); }
+    if (e.ctrlKey || e.metaKey || OC.settings.wheel === 'zoom') { const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY, notch = Math.abs(dy) >= 50 && Number.isInteger(dy); const k = U.clamp(notch ? Math.exp(-Math.sign(dy) * Math.min(Math.abs(dy), 240) / 100 * .16) : Math.exp(-dy * (e.ctrlKey ? .01 : .0025)), .6, 1.7); if (S.cropEl) { cropWheel(k); return; } E.smoothZoom(k, sx, sy); }
     else { S.panX -= e.shiftKey ? e.deltaY : e.deltaX; S.panY -= e.shiftKey ? 0 : e.deltaY; R.invalidate(); trackPage(); }
   }
   function cropWheel(k) { const el = D.get(S.cropEl); if (!el) return; el.crop.s = U.clamp(el.crop.s * k, .2, 12); R.invalidate(); }

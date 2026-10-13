@@ -203,7 +203,7 @@
 
   /* ---------- dialog ---------- */
   X.dialog = function (opts = {}) {
-    if (!S.project) return; const proj = S.project; const st = Object.assign({ fmt: OC.ls.get('exportFmt', 'png'), scale: 1, pages: proj.pages.length > 1 ? 'all' : 'current', range: '', quality: .92, transparent: false, dpi: 96, fps: 30, bitrate: 8, animated: false, selection: !!opts.selection }, OC.ls.get('exportOpts', {}));
+    if (!S.project) return; if (S.project.mode !== 'design' && S.project.mode !== 'whiteboard' && OC.modes && OC.modes.exportMenu) return OC.modes.exportMenu(); const proj = S.project; const st = Object.assign({ fmt: OC.ls.get('exportFmt', 'png'), scale: 1, pages: proj.pages.length > 1 ? 'all' : 'current', range: '', quality: .92, transparent: false, dpi: 96, fps: 30, bitrate: 8, animated: false, selection: !!opts.selection }, OC.ls.get('exportOpts', {}));
     st.selection = !!opts.selection; if (!proj.pages.some(p => p.duration) && FORMATS.find(f => f.id === st.fmt).video) st.fmt = 'png'; if (st.pages === 'all' && proj.pages.length < 2) st.pages = 'current';
     const body = h('div.export'); const pg = OC.page(); const m = UI.modal({ title: opts.selection ? 'Download selection' : 'Export', width: 760, body, actions: [] }); let busyEl = null;
     const draw = () => {

@@ -15,7 +15,9 @@ window.OC = window.OC || {};
   U.isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
   /* hyperscript: h('div.cls#id', {onclick}, children) */
+  U.copyText = async function (text) { try { await navigator.clipboard.writeText(text); return true; } catch (e) { try { const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0'; document.body.append(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch (e2) { return false; } } };
   U.h = function (tag, attrs, ...kids) {
+    tag = tag.trim().replace(/\s+/g, '.').replace(/\.{2,}/g, '.');
     const m = /^([a-z0-9]+)?((?:[.#][\w-]+)*)$/i.exec(tag) || [];
     const el = (tag.startsWith('svg:') ? document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4)) : document.createElement(m[1] || 'div'));
     (m[2] || '').replace(/([.#])([\w-]+)/g, (_, k, v) => { if (k === '.') el.classList.add(v); else el.id = v; });

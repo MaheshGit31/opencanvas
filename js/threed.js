@@ -103,7 +103,7 @@
   };
   TD.overlay = function (ctx, acc, toS) {
     const el = TD.active && D.get(TD.active); if (!el) return; const f = D.find(el.id); if (!f) return; const c = D.pageCorners(el.id); const pg = f.page; const a = toS(pg, c[0].x, c[0].y), b = toS(pg, c[2].x, c[2].y);
-    ctx.save(); ctx.strokeStyle = acc; ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5; ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y)); ctx.setLineDash([]); ctx.fillStyle = acc; const label = T('Drag to orbit · scroll to zoom'); ctx.font = '600 11px Inter, sans-serif'; const w = ctx.measureText(label).width + 16; ctx.beginPath(); ctx.roundRect(Math.min(a.x, b.x), Math.min(a.y, b.y) - 24, w, 20, 10); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(label, Math.min(a.x, b.x) + 8, Math.min(a.y, b.y) - 10); ctx.restore();
+    ctx.save(); ctx.strokeStyle = acc; ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5; ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y)); ctx.setLineDash([]); const label = T('Drag to orbit, scroll to zoom'); ctx.font = '600 11px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; const w = ctx.measureText(label).width + 20; const px = Math.min(a.x, b.x) + 10, py = Math.max(a.y, b.y) - 32; ctx.fillStyle = acc; ctx.beginPath(); ctx.roundRect(px, py, w, 22, 11); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(label, px + 10, py + 11.5); ctx.restore();
   };
 
   /* extrude a vector element into 3D */
