@@ -25,7 +25,7 @@
   E.cacheColors = cacheColors;
   function resize() {
     const r = stage.getBoundingClientRect(); const ow = W, oh = H; W = Math.max(1, r.width); H = Math.max(1, r.height); dpr = window.devicePixelRatio || 1; if (ow > 8 && oh > 8 && S.project && !S.home && (ow !== W || oh !== H)) { S.panX += (W - ow) / 2; S.panY += (H - oh) / 2; }
-    [scene, over].forEach(c => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px'; }); R.invalidate();
+    [scene, over].forEach(c => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px'; }); if (S.project && !S.home && R.onPaint) { try { R.onPaint(); } catch (e) { R.invalidate(); } } else R.invalidate();
   }
   E.stageRect = () => ({ w: W, h: H });
   E.screenToWorld = (sx, sy) => ({ x: (sx - S.panX) / S.zoom, y: (sy - S.panY) / S.zoom });
@@ -213,7 +213,7 @@
     const r = 9 / S.zoom; const sel = OC.sel.els();
     if (sel.length === 1 && sel[0].type === 'line') { const e = sel[0]; const s = D.toPage(e.id, 0, 0), t = D.toPage(e.id, e.w, 0); if (Math.hypot(p.px - s.x, p.py - s.y) < r) return { kind: 'line', end: 'start' }; if (Math.hypot(p.px - t.x, p.py - t.y) < r) return { kind: 'line', end: 'end' }; return null; }
     const rp = rotHandlePos(b); if (Math.hypot(p.px - rp.x, p.py - rp.y) < r * 1.1) return { kind: 'rotate' };
-    for (const [hx, hy, n] of HANDLES) { const q = handlePos(b, hx, hy); if (Math.hypot(p.px - q.x, p.py - q.y) < r) return { kind: 'resize', hx, hy, n }; }
+    const lone = OC.sel.els(); const textOnly = lone.length === 1 && lone[0].type === 'text'; for (const [hx, hy, n] of HANDLES) { if (textOnly && hx === 0) continue; const q = handlePos(b, hx, hy); if (Math.hypot(p.px - q.x, p.py - q.y) < r) return { kind: 'resize', hx, hy, n }; }
     return null;
   }
   function selectDown(p) {
@@ -312,7 +312,7 @@
       const it = d.items[0], e = it.e; const par = E.toParentSpace(e, center.x, center.y); const upd = { x: par.x - nw / 2, y: par.y - nh / 2, w: nw, h: nh };
       if (e.type === 'text') {
         if (hx && hy) { const s = nw / it.g.w; e.fs = U.round(it.g.fs * s, 1); e.runs = U.clone(it.g.runs); e.runs.forEach(r => { if (r.sz) r.sz = U.round(r.sz * s, 1); }); }
-        if (e.autoH) { upd.h = e.h; const lay = OC.text.layout({ ...e, w: nw }); upd.h = lay.h; upd.y = par.y - (hy ? lay.h / 2 : lay.h / 2); if (hy === -1 && hx) upd.y = par.y - lay.h / 2; }
+        if (e.autoH) { upd.h = e.h; const lay = OC.text.layout({ ...e, w: nw }); upd.h = lay.h; upd.y = hy === -1 ? it.g.y + it.g.h - lay.h : it.g.y; }
       }
       if (e.children) { e.children = U.clone(it.g.children); e.children.forEach(c => OC.ops.scaleEl(c, sx, sy, Math.min(sx, sy))); }
       if (e.crop && it.g.crop) { e.crop = { x: it.g.crop.x * sx, y: it.g.crop.y * sy, s: it.g.crop.s }; }
@@ -345,7 +345,9 @@
     if (d.type === 'resize' || d.type === 'rotate' || d.type === 'line' || d.type === 'crop' || d.type === 'node') { OC.history.commit(d.type === 'resize' ? 'Resize' : d.type === 'rotate' ? 'Rotate' : d.type === 'node' ? 'Edit path' : 'Edit'); }
   }
   /* hover and cursor */
+  const TOOL_CUR = { text: 'text', hand: 'grab', comment: 'crosshair' };
   function hover(p) {
+    if (S.tool && S.tool !== 'select' && !S.drag) { over.style.cursor = E.space ? 'grab' : (TOOL_CUR[S.tool] || 'crosshair'); return; }
     const b = E.selBox(); let cur = '';
     if (S.cropEl) cur = 'move';
     if (!cur && b && b.page === p.pg && !OC.sel.els().some(x => D.isLocked(x.id))) { const hd = hitHandle(p, b); if (hd) { if (hd.kind === 'rotate') cur = 'grab'; else if (hd.kind === 'line') cur = 'crosshair'; else { const ang = (Math.atan2(hd.hy, hd.hx) * 180 / Math.PI + b.rot + 360 * 4) % 180; cur = ang < 22.5 || ang >= 157.5 ? 'ew-resize' : ang < 67.5 ? 'nwse-resize' : ang < 112.5 ? 'ns-resize' : 'nesw-resize'; } } }
@@ -456,10 +458,10 @@
   E.paintOverlay = paintOverlay;
   function drawHandles(b, pg, locked, sels, acc, toS) {
     const sz = 9;
-    if (locked) { const p = toS(pg, b.cx, b.cy); octx.fillStyle = acc; octx.beginPath(); octx.arc(p.x, p.y, 13, 0, 7); octx.fill(); octx.fillStyle = '#fff'; octx.font = '600 13px system-ui'; octx.textAlign = 'center'; octx.textBaseline = 'middle'; octx.fillText('🔒', p.x, p.y + 1); return; }
+    if (locked) { const p = toS(pg, b.cx, b.cy); octx.fillStyle = acc; octx.beginPath(); octx.arc(p.x, p.y, 13, 0, 7); octx.fill(); octx.fillStyle = '#fff'; octx.strokeStyle = '#fff'; octx.lineWidth = 1.6; octx.lineCap = 'round'; octx.beginPath(); octx.arc(p.x, p.y - 2.5, 3.4, Math.PI, 0); octx.stroke(); octx.beginPath(); octx.roundRect ? octx.roundRect(p.x - 5, p.y - 1.5, 10, 7.5, 1.6) : octx.rect(p.x - 5, p.y - 1.5, 10, 7.5); octx.fill(); return; }
     const sq = (pt, round) => { const s = toS(pg, pt.x, pt.y); octx.fillStyle = '#fff'; octx.strokeStyle = acc; octx.lineWidth = 1.5; octx.beginPath(); if (round) octx.arc(s.x, s.y, sz / 2 + 2, 0, 7); else octx.roundRect ? octx.roundRect(s.x - sz / 2, s.y - sz / 2, sz, sz, 2) : octx.rect(s.x - sz / 2, s.y - sz / 2, sz, sz); octx.fill(); octx.stroke(); };
     if (sels.length === 1 && sels[0].type === 'line') { const e = sels[0]; sq(D.toPage(e.id, 0, 0), true); sq(D.toPage(e.id, e.w, 0), true); return; }
-    const showSides = true; HANDLES.forEach(([hx, hy]) => { if (!hx || !hy) { if (!showSides) return; const s = toS(pg, handlePos(b, hx, hy).x, handlePos(b, hx, hy).y); octx.fillStyle = '#fff'; octx.strokeStyle = acc; octx.lineWidth = 1.5; octx.beginPath(); const ang = U.rad(b.rot) + (hx ? Math.PI / 2 : 0); const L = 7, T = 3.5; octx.save(); octx.translate(s.x, s.y); octx.rotate(ang); octx.roundRect ? octx.roundRect(-L, -T, L * 2, T * 2, 3) : octx.rect(-L, -T, L * 2, T * 2); octx.fill(); octx.stroke(); octx.restore(); } else sq(handlePos(b, hx, hy)); });
+    const lone = OC.sel.els(); const textOnly = lone.length === 1 && lone[0].type === 'text'; const showSides = true; HANDLES.forEach(([hx, hy]) => { if (textOnly && hx === 0) return; if (!hx || !hy) { if (!showSides) return; const s = toS(pg, handlePos(b, hx, hy).x, handlePos(b, hx, hy).y); octx.fillStyle = '#fff'; octx.strokeStyle = acc; octx.lineWidth = 1.5; octx.beginPath(); const ang = U.rad(b.rot) + (hx ? Math.PI / 2 : 0); const L = 7, T = 3.5; octx.save(); octx.translate(s.x, s.y); octx.rotate(ang); octx.roundRect ? octx.roundRect(-L, -T, L * 2, T * 2, 3) : octx.rect(-L, -T, L * 2, T * 2); octx.fill(); octx.stroke(); octx.restore(); } else sq(handlePos(b, hx, hy)); });
     const rp = rotHandlePos(b), s = toS(pg, rp.x, rp.y); octx.fillStyle = '#fff'; octx.strokeStyle = acc; octx.beginPath(); octx.arc(s.x, s.y, 10, 0, 7); octx.fill(); octx.stroke(); octx.strokeStyle = acc; octx.lineWidth = 1.6; octx.beginPath(); octx.arc(s.x, s.y, 4.2, -2.4, 1.6); octx.stroke(); const ax = s.x + 4.2 * Math.cos(1.6), ay = s.y + 4.2 * Math.sin(1.6); octx.beginPath(); octx.moveTo(ax - 3, ay - 1); octx.lineTo(ax, ay + 1.5); octx.lineTo(ax + 1, ay - 2.5); octx.stroke();
   }
   function paintComments(ctx, acc, toS) {

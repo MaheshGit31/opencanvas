@@ -31,10 +31,11 @@
     UI.onProjectOpen(); OC.bus.emit('project-open'); OC.render.invalidate();
   }
   A.create = async function (cat, item) {
+    try { OC.templates.track(null, cat.id); } catch (e) { }
     if (S.project && A.dirty) await A.save(false); item = item || [T('Untitled design'), 1080, 1080]; const w = item[1] || 0, hh = item[2] || 0;
     const p = D.newProject({ name: item[0] === 'Custom size' ? T('Untitled design') : item[0], mode: cat.mode, cat: cat.id, w: w || 1080, h: hh || 1080, photo: cat.photo, video: cat.video, data: {} });
     if (cat.mode === 'doc' && w) p.data.size = { w, h: hh }; if (cat.mode === 'email') p.data.size = { w: 600 };
-    OC.assets.map = {}; OC.assets.cache = {}; open(p); if (p.mode === 'design' && cat.id === 'presentations' && !p.pages[0].elements.length) { OC.templates.apply(OC.templates.list.find(t => t.id === 'title-slide') || OC.templates.list[0], { replace: true }); OC.history.init(); }
+    OC.assets.map = {}; OC.assets.cache = {}; open(p); 
     A.save(false);
   };
   A.duplicateProject = async function (silent) { if (!S.project) return; const rec = await A.snapshotRecord(S.project); const p = JSON.parse(rec.project); p.id = U.uid('proj'); p.name = S.project.name + ' ' + T('copy'); p.created = p.modified = Date.now(); rec.project = JSON.stringify(p); rec.meta.id = p.id; rec.meta.name = p.name; rec.meta.modified = p.modified; await OC.db.set('projects', p.id, rec); await OC.db.set('kv', 'meta:' + p.id, rec.meta); if (!silent) { await A.openId(p.id); U.toast('Made a copy'); } };
@@ -65,13 +66,24 @@
   A.renderHome = async function (host) {
     host.textContent = ''; const hero = h('section.home-hero', h('h1', T('What will you design today?')), h('div.home-search', h('span', { html: OC.icon('search', 18) }), h('input', { placeholder: T('Search templates and sizes'), onkeydown: e => { e.stopPropagation(); if (e.key === 'Enter') searchGo(e.target.value); } })));
     const tiles = h('div.home-cats', OC.CATEGORIES.map(c => h('button.home-cat', { onclick: () => UI.newDialog(c.id) }, h('span.hc-ic', { html: OC.icon(c.icon, 24) }), h('b', T(c.label)))));
+    const QUICK = [['presentations', 'Presentation', 1920, 1080], ['social', 'Instagram post', 1080, 1080], ['social', 'Story', 1080, 1920], ['print', 'Poster', 1123, 1587], ['videos', 'Video', 1920, 1080], ['education', 'Worksheet', 794, 1123], ['whiteboards', 'Whiteboard', 1920, 1080]];
+    const uc = OC.ls.get('usage', { cats: {} }).cats || {}; QUICK.sort((x, y) => (uc[y[0]] || 0) - (uc[x[0]] || 0));
+    const quick = h('section.home-sec', h('h2', T('Start something new')), h('div.quick', QUICK.slice(0, 6).map(([c, n, w, hh]) => h('button.quick-card', { onclick: () => A.create(OC.CATEGORIES.find(x => x.id === c), [n, w, hh]) }, h('div.q-prev', h('i', { style: `aspect-ratio:${w}/${hh};${w > hh ? 'width:60%' : 'height:70%'}` })), h('b', T(n)), h('small', w + ' × ' + hh)))));
     const recent = h('section.home-sec', h('h2', T('Recent designs'))); const grid = h('div.home-grid'); recent.append(grid);
     const list = await A.listProjects();
     grid.append(h('button.proj-card.new', { onclick: () => UI.newDialog() }, h('div.pc-thumb', { html: OC.icon('plus', 32) }), h('b', T('New design'))));
     list.slice(0, 24).forEach(m => grid.append(h('div.proj-card', { onclick: () => A.openId(m.id), oncontextmenu: e => { e.preventDefault(); UI.menu([{ label: 'Open', icon: 'folder-open', onclick: () => A.openId(m.id) }, { label: 'Delete', icon: 'trash-2', danger: true, onclick: async () => { if (await UI.confirm('Delete project', m.name, 'Delete', true)) { await A.deleteProject(m.id); A.renderHome(host); } } }], e.clientX, e.clientY); } }, h('div.pc-thumb', m.thumb ? { style: `background-image:url("${m.thumb}")` } : {}, m.thumb ? '' : h('span', { html: OC.icon((OC.CATEGORIES.find(c => c.id === m.cat) || {}).icon || 'file', 28) })), h('b', m.name), h('small', new Date(m.modified).toLocaleDateString()))));
-    const tpl = h('section.home-sec', h('h2', T('Start from a template')), h('div.home-tpl', OC.templates.list.slice(0, 12).map(t => { const c = (() => { try { return OC.templates.thumb(t, 260); } catch (e) { return U.newCanvas(10, 10); } })(); const cv = U.newCanvas(c.width, c.height); cv.getContext('2d').drawImage(c, 0, 0); return h('button.tpl-card', { onclick: async () => { const cat = OC.CATEGORIES.find(x => t.cats.includes(x.id) && x.mode !== 'doc') || OC.CATEGORIES[2]; await A.create(cat, [t.name, t.w, t.h]); OC.templates.apply(t, {}); OC.history.init(); }, title: t.name }, cv, h('small', t.name)); })));
+    const tpl = h('section.home-sec', h('h2', T('Templates')));
+    const chips = h('div.chips.scroll.sub'); const tgrid = h('div.home-tpl'); let tf = (OC.ls.get('usage', {}).recent || []).length ? 'foryou' : 'all'; tpl.append(chips, tgrid);
+    const drawT = () => {
+      chips.textContent = ''; OC.templates.FILTERS.forEach(([k, l]) => chips.append(h('button.chip' + (k === tf ? '.on' : ''), { onclick: () => { tf = k; drawT(); } }, T(l))));
+      tgrid.textContent = ''; const list = OC.templates.pick(tf);
+      if (!list.length) { tgrid.append(UI.empty('Templates you use show up here')); return; }
+      list.forEach(t => { const c = (() => { try { return OC.templates.thumb(t, 320); } catch (e) { return U.newCanvas(10, 10); } })(); const cv = U.newCanvas(c.width, c.height); cv.getContext('2d').drawImage(c, 0, 0); tgrid.append(h('button.tpl-card', { onclick: async () => { const cat = OC.CATEGORIES.find(x => t.cats.includes(x.id) && x.mode !== 'doc') || OC.CATEGORIES[2]; await A.create(cat, [t.name, t.w, t.h]); OC.templates.apply(t, {}); OC.history.init(); }, title: t.name }, h('div.tpl-img', cv), h('small', t.name))); });
+    };
+    drawT();
     const foot = h('section.home-foot', UI.btn('Open a project file', () => A.openFile(), { icon: 'folder-open' }), UI.btn('Coming from Canva?', () => UI.help(), { icon: 'heart' }), UI.btn('Community', async () => { await A.create(OC.CATEGORIES.find(c => c.id === 'social'), ['Untitled design', 1080, 1080]); UI.openPanel('design'); }, { icon: 'users' }));
-    host.append(hero, tiles, recent, tpl, foot);
+    host.append(hero, tiles, quick, recent, tpl, foot);
     OC.fonts.preloadMany && OC.fonts.preloadMany(['Poppins', 'Playfair Display', 'Bebas Neue', 'Anton', 'Great Vibes', 'Caveat', 'Inter', 'Shrikhand']);
   };
   function searchGo(q) { q = (q || '').toLowerCase().trim(); if (!q) return UI.newDialog(); for (const c of OC.CATEGORIES) for (const i of c.items) if (i[0].toLowerCase().includes(q)) { A.create(c, i); return; } const c = OC.CATEGORIES.find(c => c.label.toLowerCase().includes(q)); UI.newDialog(c && c.id); }

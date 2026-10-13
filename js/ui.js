@@ -152,7 +152,7 @@
 
   /* generic scrollable section */
   UI.section = function (title, body, o = {}) {
-    const open = o.open !== false; const sec = h('div.sect' + (open ? '.open' : '')); const head = h('button.sect-h', { onclick: () => sec.classList.toggle('open') }, h('span', T(title)), o.right || '', h('span.chev', { html: OC.icon('chevron-down', 14) }));
+    UI._sec = UI._sec || {}; const sk = title; const open = sk in UI._sec ? UI._sec[sk] : o.open !== false; const sec = h('div.sect' + (open ? '.open' : '')); const head = h('button.sect-h', { onclick: () => { sec.classList.toggle('open'); UI._sec[sk] = sec.classList.contains('open'); } }, h('span', T(title)), o.right || '', h('span.chev', { html: OC.icon('chevron-down', 14) }));
     sec.append(head, h('div.sect-b', body)); return sec;
   };
   UI.field = (label, ...ctrl) => h('div.fld', h('label', T(label)), h('div.fld-c', ctrl));
@@ -167,3 +167,44 @@
   new MutationObserver(() => document.querySelectorAll('.chips.scroll').forEach(edge)).observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('click', e => { const ch = e.target.closest && e.target.closest('.chips.scroll .chip'); if (ch) setTimeout(() => ch.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }), 0); });
 })();
+
+/* instant tooltips: native titles are slow and flaky, so move them to a styled bubble */
+(function () {
+  let tip = null, timer = 0, cur = null;
+  const hide = () => { clearTimeout(timer); cur = null; if (tip) tip.classList.remove('on'); };
+  const show = el => {
+    const text = el.dataset.tip; if (!text) return;
+    if (!tip) { tip = document.createElement('div'); tip.className = 'oc-tip'; document.body.append(tip); }
+    tip.textContent = text; tip.classList.add('on');
+    const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = r.left + r.width / 2 - tw / 2, y = r.bottom + 8; if (y + th > innerHeight - 6) y = r.top - th - 8;
+    tip.style.left = Math.max(6, Math.min(innerWidth - tw - 6, x)) + 'px'; tip.style.top = Math.max(6, y) + 'px';
+  };
+  document.addEventListener('pointerover', e => {
+    const el = e.target.closest && e.target.closest('[title],[data-tip],[aria-label]'); if (!el || el === cur) return;
+    if (el.hasAttribute('title')) { const t = el.getAttribute('title'); if (t) { el.dataset.tip = t; } el.removeAttribute('title'); }
+    if (!el.dataset.tip && el.matches('button,[role=button]') && el.getAttribute('aria-label')) el.dataset.tip = el.getAttribute('aria-label');
+    if (!el.dataset.tip) return; cur = el; clearTimeout(timer); timer = setTimeout(() => show(el), tip && tip.classList.contains('on') ? 0 : 250);
+  }, true);
+  document.addEventListener('pointerout', e => { if (cur && (!e.relatedTarget || !cur.contains(e.relatedTarget))) hide(); }, true);
+  ['pointerdown', 'keydown', 'wheel', 'scroll'].forEach(ev => document.addEventListener(ev, hide, true));
+})();
+
+/* dropdown that previews each option live while hovering */
+OC.ui.liveSelect = function (opts, value, o) {
+  const U = OC.U, h = U.h, UI = OC.ui;
+  const label = v => { const f = opts.find(x => x[0] === v); return f ? f[1] : v; };
+  const btn = h('button.select.live-sel', { type: 'button', onpointerdown: e => e.preventDefault() }, h('span.ls-l', OC.t(label(value))), h('span.chev', { html: OC.icon('chevron-down', 14) }));
+  let pop = null, chosen = false;
+  const icon = v => h('span.bl-ic', h('i.a'), h('i.b', { style: 'mix-blend-mode:' + (v === 'source-over' ? 'normal' : v) }));
+  btn.onclick = () => {
+    if (pop && UI.pops.includes(pop)) { pop.close(); return; }
+    chosen = false; const start = value;
+    const list = h('div.live-list', { onpointerleave: () => { if (!chosen) o.onPreview(start); } }, opts.map(([v, l]) => h('button' + (v === value ? '.on' : ''), {
+      onpointerenter: () => o.onPreview(v), onclick: () => { chosen = true; value = v; btn.firstChild.textContent = OC.t(l); o.onCommit(v); pop.close(); }
+    }, o.icons ? icon(v) : '', h('span', OC.t(l)))));
+    pop = UI.popover(btn, list, { cls: 'live-pop', onclose: () => { if (!chosen) o.onPreview(start); } });
+  };
+  return btn;
+};
+OC.ui.blendOptions = ['source-over', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'].map(b => [b, b === 'source-over' ? 'Normal' : b.replace('-', ' ').replace(/^./, c => c.toUpperCase())]);

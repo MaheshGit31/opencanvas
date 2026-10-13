@@ -203,7 +203,19 @@
     const lang = await OC.ui.pickLanguage(); if (!lang) return; U.toast('Translating'); const out = await OC.i18n.translateMany(els.map(e => OC.text.plain(e)), lang);
     els.forEach((e, i) => { if (out[i] != null) { const r0 = e.runs[0] || {}; e.runs = [{ ...r0, t: out[i] }]; } }); commit('Translate'); OC.text.clear();
   };
-  Ops.seeMore = function () { const e = OC.sel.one(); if (!e) return; const q = (e.tags && e.tags[0]) || e.name; OC.ui.openPanel('elements', { query: q }); };
+  Ops.saveToElements = function () {
+    const els = Ops.ordered(OC.sel.els()).filter(x => x.type !== 'text' || OC.sel.els().length > 1); if (!els.length) { U.toast('Select an element first'); return; }
+    let el = els.length === 1 ? U.clone(els[0]) : D.make('group', { name: 'My element', children: U.clone(els), w: 1, h: 1 });
+    if (els.length > 1) { const b = D.boundsOf(els); el.children.forEach(c => { c.x -= b.x; c.y -= b.y; }); el.w = b.w; el.h = b.h; }
+    el.x = 0; el.y = 0; el.rot = 0; const l = OC.ls.get('symbols', []); l.push({ id: U.uid('s'), el }); OC.ls.set('symbols', l); OC.bus.emit('symbols');
+    U.toast('Saved to Elements'); if (OC.ui.curPanel === 'elements') OC.ui.openPanel('elements', { tab: 'yours' });
+  };
+  Ops.seeMore = function () {
+    const e = OC.sel.one(); if (!e) return; const q = ((e.tags && e.tags[0]) || e.name || '').replace(/\.[a-z0-9]+$/i, '');
+    if (e.type === 'image') OC.ui.openPanel('elements', { tab: 'photos', query: q });
+    else if (e.type === 'text') OC.ui.openPanel('text');
+    else OC.ui.openPanel('elements', { tab: e.type === 'path' ? 'shapes' : (['rect', 'ellipse', 'polygon', 'star'].includes(e.type) ? 'shapes' : 'yours'), query: '' });
+  };
   Ops.downloadSelection = function () { OC.exporter.dialog({ selection: true }); };
 
   /* palettes */

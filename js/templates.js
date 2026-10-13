@@ -18,7 +18,7 @@
   T('yt-thumb', 'Video thumbnail', ['social', 'videos'], 1280, 720, () => ({ bg: grad('#0f0c29', '#302b63', 120), els: [el(760, 60, 520, 520, grad('#ff0080', '#ff8c00'), { op: .9 }), tx('YOU WON’T', 60, 90, 700, { fs: 120, fw: 400, ff: 'Bebas Neue', color: '#ffffff', ls: 2 }), tx('BELIEVE THIS', 60, 220, 760, { fs: 170, fw: 400, ff: 'Bebas Neue', color: '#ffe14d', ls: 2, stroke: { color: '#000000', width: 5, align: 'center', cap: 'round', join: 'round', dash: [], profile: 'uniform', opacity: 1 } }), shape('Arrow', 80, 470, 280, '#ff3b3b', { rot: -12 }), btn('WATCH NOW', 60, 580, 360, 90, '#ffe14d', '#111111', { r: 16, ff: 'Poppins' })] }));
   T('story-announce', 'Story announcement', ['social'], 1080, 1920, () => ({ bg: grad('#ff9a9e', '#fad0c4', 180), els: [el(-200, 1300, 900, 900, '#ffffff', { op: .35 }), el(500, -250, 800, 800, '#ffffff', { op: .25 }), tx('BIG NEWS', 90, 560, 900, { fs: 150, fw: 800, ff: 'Poppins', color: '#1c1c28', ls: 4, align: 'center' }), tx('Something exciting is landing this Friday', 140, 800, 800, { fs: 56, ff: 'Poppins', align: 'center', color: '#1c1c28' }), btn('Swipe up', 290, 1350, 500, 110, '#1c1c28', '#ffffff', { fs: 40 })] }));
   T('title-slide', 'Title slide', ['presentations', 'education'], 1920, 1080, () => ({ bg: { type: 'solid', color: '#101828' }, els: [el(1150, 150, 700, 700, grad('#2563eb', '#00c2a8')), el(1450, 520, 360, 360, '#ffb020', { op: .9 }), rc(1100, 780, 200, 200, '#ff5d8f', { r: 100 }), tx('Presentation title', 130, 330, 900, { fs: 130, fw: 700, ff: 'Poppins', color: '#ffffff', lh: 1.05 }), tx('A short line that explains what this is about', 130, 640, 800, { fs: 44, color: '#c7d2fe', ff: 'Inter' }), line(130, 590, 140, '#ffb020', 8)] }));
-  T('agenda', 'Agenda', ['presentations', 'education'], 1920, 1080, () => { const items = ['Welcome', 'Where we are', 'The plan', 'Questions']; const els = [rc(0, 0, 640, 1080, '#2563eb'), tx('Agenda', 80, 400, 480, { fs: 120, fw: 700, ff: 'Poppins', color: '#ffffff' })]; items.forEach((t, i) => { els.push(tx('0' + (i + 1), 780, 200 + i * 200, 160, { fs: 70, fw: 700, ff: 'Poppins', color: '#2563eb' }), tx(t, 960, 212 + i * 200, 800, { fs: 64, fw: 500, ff: 'Poppins' }), line(780, 330 + i * 200, 1000, '#e5e7eb', 3)); }); return { bg: { type: 'solid', color: '#ffffff' }, els }; });
+  T('agenda', 'Agenda', ['presentations', 'education'], 1920, 1080, () => { const items = ['Welcome', 'Where we are', 'The plan', 'Questions']; const els = [rc(0, 0, 640, 1080, '#2563eb'), tx('Agenda', 70, 440, 520, { fs: 92, fw: 700, ff: 'Poppins', color: '#ffffff' })]; items.forEach((t, i) => { els.push(tx('0' + (i + 1), 780, 200 + i * 200, 160, { fs: 70, fw: 700, ff: 'Poppins', color: '#2563eb' }), tx(t, 960, 212 + i * 200, 800, { fs: 64, fw: 500, ff: 'Poppins' }), line(780, 330 + i * 200, 1000, '#e5e7eb', 3)); }); return { bg: { type: 'solid', color: '#ffffff' }, els }; });
   T('flyer', 'Event flyer', ['print'], 816, 1056, () => ({ bg: grad('#1a1a2e', '#16213e', 180), els: [el(-120, -120, 440, 440, '#e94560', { op: .9 }), el(560, 760, 420, 420, '#0f3460'), tx('LIVE', 60, 300, 700, { fs: 210, fw: 400, ff: 'Bebas Neue', color: '#ffffff', ls: 6 }), tx('MUSIC NIGHT', 60, 480, 700, { fs: 120, fw: 400, ff: 'Bebas Neue', color: '#e94560', ls: 4 }), tx('Saturday 21 June  ·  8 PM\nThe Warehouse, Main Street', 60, 650, 640, { fs: 30, ff: 'Poppins', color: '#ffffff', lh: 1.5 }), btn('Free entry', 60, 820, 260, 70, '#ffffff', '#1a1a2e', { fs: 26 })] }));
   T('business-card', 'Business card', ['print'], 336, 192, () => ({ bg: { type: 'solid', color: '#ffffff' }, els: [rc(0, 0, 90, 192, '#1c1c28'), el(14, 20, 62, 62, grad('#2563eb', '#ff5d8f')), tx('Alex Morgan', 112, 40, 210, { fs: 24, fw: 700, ff: 'Poppins' }), tx('Creative Director', 112, 72, 210, { fs: 12, ff: 'Inter', color: '#2563eb', fw: 600, ls: 1.5, tf: 'upper' }), tx('hello@example.com\n+1 555 0123\nexample.com', 112, 114, 210, { fs: 11, ff: 'Inter', lh: 1.6, color: '#555566' })] }));
   T('poster-type', 'Type poster', ['print', 'education'], 794, 1123, () => ({ bg: { type: 'solid', color: '#ffe14d' }, els: [tx('LESS', 40, 60, 720, { fs: 260, fw: 400, ff: 'Anton', color: '#111111', lh: .95 }), tx('IS', 40, 330, 720, { fs: 260, fw: 400, ff: 'Anton', color: '#111111', lh: .95 }), tx('MORE', 40, 600, 720, { fs: 260, fw: 400, ff: 'Anton', color: '#ff3b3b', lh: .95 }), rc(40, 980, 714, 8, '#111111'), tx('A manifesto for simple design', 40, 1010, 714, { fs: 28, ff: 'Inter', fw: 600 })] }));
@@ -55,7 +55,24 @@
   };
   TP.build = function (t) { const b = t.build(); return { w: t.w, h: t.h, bg: b.bg, elements: b.els }; };
   TP.thumb = function (t, max = 220) { const b = TP.build(t); const pg = D.newPage(b.w, b.h, { bg: b.bg, elements: b.elements }); return OC.render.thumb(pg, max); };
+  /* light personalisation: remember what the user makes and picks */
+  const usage = () => OC.ls.get('usage', { tpl: {}, cats: {}, recent: [] });
+  TP.track = function (t, catId) {
+    const u = usage(); if (t) { u.tpl[t.id] = (u.tpl[t.id] || 0) + 1; u.recent = [t.id, ...u.recent.filter(x => x !== t.id)].slice(0, 12); t.cats.forEach(c => { u.cats[c] = (u.cats[c] || 0) + 1; }); }
+    if (catId) u.cats[catId] = (u.cats[catId] || 0) + 2; OC.ls.set('usage', u);
+  };
+  TP.FILTERS = [['foryou', 'For you'], ['recent', 'Recent'], ['all', 'All'], ['social', 'Social'], ['presentations', 'Slides'], ['print', 'Print'], ['education', 'Education'], ['whiteboards', 'Boards']];
+  TP.pick = function (filter, cat) {
+    const u = usage(), all = TP.list;
+    if (filter === 'recent') return u.recent.map(id => all.find(t => t.id === id)).filter(Boolean);
+    if (filter === 'foryou') {
+      const score = t => (cat && t.cats.includes(cat) ? 6 : 0) + t.cats.reduce((n, c) => n + Math.min(5, (u.cats[c] || 0)), 0) + Math.min(4, u.tpl[t.id] || 0) - (u.recent.indexOf(t.id) === 0 ? 3 : 0);
+      return all.slice().sort((a, b) => score(b) - score(a));
+    }
+    if (filter === 'all') return all.slice(); return all.filter(t => t.cats.includes(filter));
+  };
   TP.apply = function (t, o = {}) {
+    TP.track(t);
     const b = t.build ? TP.build(t) : t; const P = OC.page(); const S = OC.S; let pg = P;
     if (o.newPage || P.elements.length && o.newPage !== false && false) { pg = OC.ops.addPage(); }
     const els = U.clone(b.elements); OC.relabel(els); const probe = { w: b.w, h: b.h, elements: els, bg: b.bg };

@@ -29,7 +29,7 @@
     body.append(UI.section('Layout', h('div.grid2', f('x', 'X', g.x), f('y', 'Y', g.y), f('w', 'W', g.w, { min: 1 }), f('h', 'H', g.h, { min: 1 }), f('rot', '°', g.rot || 0, { title: T('Rotation') }), el.radius !== undefined ? UI.num(Array.isArray(el.radius) ? el.radius[0] : el.radius, (v, l) => apply(e => { if (e.radius !== undefined) e.radius = v; }, 'Radius', l), { label: 'R', min: 0, dec: 0 }) : h('span')), h('div.row.wrap', [['left', 'align-start-vertical'], ['center', 'align-center-vertical'], ['right', 'align-end-vertical'], ['top', 'align-start-horizontal'], ['middle', 'align-center-horizontal'], ['bottom', 'align-end-horizontal']].map(([a, i]) => UI.iconBtn(i, 'Align ' + a, () => O.align(a))), UI.iconBtn('flip-horizontal-2', 'Flip horizontal', () => O.flip('h')), UI.iconBtn('flip-vertical-2', 'Flip vertical', () => O.flip('v')))));
     if (el.children && el.type === 'frame') body.append(UI.section('Auto layout', autoLayout(el)));
     body.append(UI.section('Appearance', h('div', h('div.row', h('span.lbl', T('Opacity')), UI.slider(el.opacity * 100, 0, 100, 1, v => apply(e => { E.setGeom(e, { opacity: v / 100 }); }, 'Opacity', true), v => apply(e => { E.setGeom(e, { opacity: v / 100 }); }, 'Opacity')), UI.num(Math.round(el.opacity * 100), v => apply(e => { E.setGeom(e, { opacity: v / 100 }); }, 'Opacity'), { unit: '%', w: 66, dec: 0, min: 0, max: 100 }), els.length === 1 ? kfBtn(el, 'opacity') : ''),
-      UI.field('Blend', UI.select([['source-over', 'Normal'], 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'], el.blend || 'source-over', v => apply(e => { e.blend = v; }, 'Blend'))))));
+      UI.field('Blend', OC.ctxbar.blendCtl(el)))));
     if (el.type === 'text' || el.type === 'image' && false) { }
     if (el.type === 'text') body.append(UI.section('Typography', typography(el)));
     if (el.fills !== undefined && el.type !== 'image' && el.type !== 'video' && el.type !== 'scene3d') body.append(UI.section('Fill', fillList(els), { right: h('span.sect-act', { onclick: e => { e.stopPropagation(); apply(x => { (x.fills = x.fills || []).push(D.solid('#cccccc')); }, 'Add fill'); IN.renderNow(); }, html: OC.icon('plus', 15) }) }));
@@ -77,16 +77,29 @@
     const tree = h('div.layer-tree'); body.append(tree);
     const row = (el, depth) => {
       const kids = el.children; const collapsed = IN.collapsed[el.id];
-      const r = h('div.layer' + (OC.sel.has(el.id) ? '.on' : '') + (el.visible === false ? '.hid' : ''), { style: `padding-left:${8 + depth * 14}px`, draggable: true, 'data-id': el.id,
-        onclick: e => { if (D.isLocked(el.id) && !el.locked) return; if (e.shiftKey) OC.sel.toggle(el.id); else OC.sel.set([el.id]); }, ondblclick: () => O.rename(el), oncontextmenu: e => { e.preventDefault(); OC.sel.set([el.id]); UI.contextMenu(e.clientX, e.clientY, 'element', {}); },
-        ondragstart: e => { e.dataTransfer.setData('text/oc-layer', el.id); }, ondragover: e => { e.preventDefault(); const rc = r.getBoundingClientRect(); const y = (e.clientY - rc.top) / rc.height; r.dataset.drop = el.children && y > .3 && y < .7 ? 'in' : y < .5 ? 'above' : 'below'; }, ondragleave: () => { delete r.dataset.drop; },
-        ondrop: e => { e.preventDefault(); const mode = r.dataset.drop; delete r.dataset.drop; const id = e.dataTransfer.getData('text/oc-layer'); moveLayer(id, el, mode); } },
+      const r = h('div.layer' + (OC.sel.has(el.id) ? '.on' : '') + (el.visible === false ? '.hid' : ''), { style: `padding-left:${8 + depth * 14}px`, 'data-id': el.id, onpointerdown: e => layerDrag(e, el, r),
+        onclick: e => { if (r.dataset.nosel) return; if (D.isLocked(el.id) && !el.locked) return; if (e.shiftKey) OC.sel.toggle(el.id); else OC.sel.set([el.id]); }, ondblclick: () => O.rename(el), oncontextmenu: e => { e.preventDefault(); OC.sel.set([el.id]); UI.contextMenu(e.clientX, e.clientY, 'element', {}); },
+        ondrop: null },
         kids ? h('button.lc', { onclick: e => { e.stopPropagation(); IN.collapsed[el.id] = !collapsed; IN.renderNow(); }, html: OC.icon(collapsed ? 'chevron-right' : 'chevron-down', 13) }) : h('span.lc'), h('span.lt', { html: OC.icon(ICON[el.type] || 'square', 14) }), h('span.ln', el.name || el.type),
         el.compRef ? h('span.lt', { html: OC.icon('component', 12) }) : '', h('button.lb' + (el.locked ? '.on' : ''), { onclick: e => { e.stopPropagation(); el.locked = !el.locked; if (el.locked) OC.sel.clear(); OC.history.commit('Lock'); }, html: OC.icon(el.locked ? 'lock' : 'unlock', 13) }), h('button.lb' + (el.visible === false ? '.on' : ''), { onclick: e => { e.stopPropagation(); O.toggleVisible(el); }, html: OC.icon(el.visible === false ? 'eye-off' : 'eye', 13) }));
       tree.append(r); if (kids && !collapsed) kids.slice().reverse().forEach(c => row(c, depth + 1));
     };
     pg.elements.slice().reverse().forEach(e => row(e, 0));
     if (!pg.elements.length) tree.append(UI.empty('Nothing here yet'));
+  }
+  function layerDrag(e, el, row) {
+    if (e.button !== 0 || e.target.closest('button') || D.isLocked(el.id) && !el.locked) return;
+    const tree = row.parentNode, y0 = e.clientY; let on = false, tgt = null, mode = null, ghost = null;
+    const clear = () => { tree.querySelectorAll('[data-drop]').forEach(x => delete x.dataset.drop); };
+    const mv = ev => {
+      if (!on) { if (Math.abs(ev.clientY - y0) < 5) return; on = true; row.classList.add('dragging'); ghost = h('div.layer-ghost', el.name || el.type); document.body.append(ghost); }
+      ghost.style.left = ev.clientX + 12 + 'px'; ghost.style.top = ev.clientY + 6 + 'px';
+      clear(); tgt = null; const rows = [...tree.querySelectorAll('.layer')]; const r = rows.find(x => { const b = x.getBoundingClientRect(); return ev.clientY >= b.top && ev.clientY <= b.bottom; });
+      if (r && r !== row) { const t = D.get(r.dataset.id); if (t && !D.ancestors(t.id).includes(el)) { const b = r.getBoundingClientRect(), f = (ev.clientY - b.top) / b.height; tgt = t; mode = t.children && f > .3 && f < .7 ? 'in' : f < .5 ? 'above' : 'below'; r.dataset.drop = mode; } }
+      const sc = tree.closest('.insp-body') || tree.parentNode; const sb = sc.getBoundingClientRect(); if (ev.clientY < sb.top + 30) sc.scrollTop -= 8; else if (ev.clientY > sb.bottom - 30) sc.scrollTop += 8;
+    };
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); if (ghost) ghost.remove(); clear(); row.classList.remove('dragging'); if (on) { if (tgt) moveLayer(el.id, tgt, mode); row.dataset.nosel = '1'; setTimeout(() => delete row.dataset.nosel, 50); } };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
   }
   function moveLayer(id, target, mode) {
     const el = D.get(id); if (!el || el === target || D.ancestors(target.id).includes(el)) return; const f = D.find(el.id), tf = D.find(target.id);

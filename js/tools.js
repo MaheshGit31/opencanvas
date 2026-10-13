@@ -6,7 +6,7 @@
   E.setTool = function (name) {
     if (S.tool === 'pen' && name !== 'pen') E.tools.pen.finish(false);
     E.endEdit(); if (name !== 'select') { S.nodeEdit = null; S.cropEl = null; }
-    S.tool = name; if (name !== 'select' && name !== 'hand') OC.bus.emit('selection'); OC.bus.emit('tool'); E.over && (E.over.style.cursor = ''); R.invalidate();
+    S.tool = name; if (name !== 'select' && name !== 'hand') OC.bus.emit('selection'); OC.bus.emit('tool'); E.over && (E.over.style.cursor = name === 'select' ? '' : name === 'text' ? 'text' : name === 'hand' ? 'grab' : 'crosshair'); R.invalidate();
     if (E.stage) E.stage.dataset.tool = name;
   };
   const back = () => { if (!E.keepTool) E.setTool('select'); };
@@ -166,7 +166,7 @@
     down(p) {
       const pts = [{ x: p.px, y: p.py }]; const pg = p.pg; const st = E.tools.pencil.cur = { pts, pg };
       S.drag = { type: 'create', pg, tool: {
-        move(q) { const l = pts[pts.length - 1]; if (Math.hypot(q.px - l.x, q.py - l.y) * S.zoom > 2.5) { pts.push({ x: q.px, y: q.py }); E.paintOverlay(); } },
+        move(q) { const l = pts[pts.length - 1]; if (Math.hypot(q.px - l.x, q.py - l.y) * S.zoom > 1.2) { pts.push({ x: q.px, y: q.py }); if (!st.q) { st.q = requestAnimationFrame(() => { st.q = 0; E.paintOverlay(); }); } } },
         up() {
           E.tools.pencil.cur = null; if (pts.length < 2) { E.paintOverlay(); return; } const info = V.fromPoints(pts, 2.2 / S.zoom * 1.2 + 1); if (!info.subpaths.length) return;
           const b = { x: info.bounds.x, y: info.bounds.y, w: Math.max(info.bounds.w, 1), h: Math.max(info.bounds.h, 1) };
@@ -175,7 +175,7 @@
         }
       } };
     },
-    over(ctx, acc, toS) { const c = E.tools.pencil.cur; if (!c) return; ctx.save(); ctx.strokeStyle = S.drawColor; ctx.lineWidth = S.drawWidth * S.zoom; ctx.lineCap = ctx.lineJoin = 'round'; ctx.beginPath(); c.pts.forEach((q, i) => { const s = toS(c.pg, q.x, q.y); i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); ctx.stroke(); ctx.restore(); }
+    over(ctx, acc, toS) { const c = E.tools.pencil.cur; if (!c) return; ctx.save(); ctx.strokeStyle = S.drawColor; ctx.lineWidth = S.drawWidth * S.zoom; ctx.lineCap = ctx.lineJoin = 'round'; ctx.beginPath(); (() => { const sp = c.pts.map(q => toS(c.pg, q.x, q.y)); if (sp.length < 3) { sp.forEach((s, i) => i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y)); return; } ctx.moveTo(sp[0].x, sp[0].y); for (let i = 1; i < sp.length - 1; i++) { const mx = (sp[i].x + sp[i + 1].x) / 2, my = (sp[i].y + sp[i + 1].y) / 2; ctx.quadraticCurveTo(sp[i].x, sp[i].y, mx, my); } const z = sp[sp.length - 1]; ctx.lineTo(z.x, z.y); })(); ctx.stroke(); ctx.restore(); }
   };
   E.keepTool = false;
   OC.bus.on('tool', () => { if (S.tool !== 'pencil') E.keepTool = false; });

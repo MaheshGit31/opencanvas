@@ -59,7 +59,7 @@
     }
     t.append(h('span.grow'));
     if (inProj) {
-      t.append(h('div.mode-sw', { title: T('Simple mode hides advanced tools') }, UI.seg([{ v: 'simple', label: 'Simple' }, { v: 'advanced', label: 'Advanced' }], OC.settings.mode, v => OC.settings.set('mode', v))));
+      t.append(h('button.adv-tog' + (OC.settings.mode === 'advanced' ? '.on' : ''), { title: T(OC.settings.mode === 'advanced' ? 'Hide advanced tools' : 'Show advanced tools'), 'aria-label': T('Advanced tools'), onclick: () => OC.settings.set('mode', OC.settings.mode === 'advanced' ? 'simple' : 'advanced'), html: OC.icon('plus', 18) }));
       t.append(aiChip());
     }
     t.append(UI.iconBtn('languages', 'Language', async () => { const l = await UI.pickLanguage(); if (l) OC.i18n.set(l); }, false, { cls: 'top-ic' }));
@@ -158,7 +158,7 @@
       { label: 'Lock', icon: 'lock', sub: [{ label: locked ? 'Unlock' : 'Lock', onclick: () => O.lock() }, { label: lpos ? 'Unlock position' : 'Lock position', onclick: () => O.lock('pos') }] }, { label: 'Link', icon: 'link', keys: K('link'), onclick: () => O.setLink() },
       { label: 'Hide element timing', icon: 'clock', onclick: () => O.toggleTiming() }, { label: 'Alternative text', icon: 'info', onclick: () => O.setAlt() }, { sep: 1 },
       { label: 'Replace background', icon: 'image', disabled: !isImg, onclick: () => OC.photo.replaceBackground(one) }, { label: 'Apply colors to page', icon: 'palette', onclick: () => O.applyColorsToPage() }, { label: 'Download selection', icon: 'download', onclick: () => O.downloadSelection() },
-      { label: 'Translate text', icon: 'languages', disabled: !hasText, onclick: () => O.translateText() }, { label: 'See more like this', icon: 'search', disabled: !one || !(one.tags && one.tags.length || one.name), onclick: () => O.seeMore() }, { label: 'Info', icon: 'info', onclick: () => UI.info(one || els[0]) }
+      { label: 'Translate text', icon: 'languages', disabled: !hasText, onclick: () => O.translateText() }, { label: 'Save to elements', icon: 'plus', disabled: !els.length || els.every(x => x.type === 'text'), onclick: () => O.saveToElements() }, { label: 'See more like this', icon: 'search', disabled: !one || !(one.tags && one.tags.length || one.name), onclick: () => O.seeMore() }, { label: 'Info', icon: 'info', onclick: () => UI.info(one || els[0]) }
     ];
     if (adv) items.splice(items.length - 6, 0, { sep: 1 }, { label: 'Group', icon: 'group', keys: K('group'), disabled: els.length < 2, onclick: () => O.group() }, { label: 'Ungroup', icon: 'ungroup', keys: K('ungroup'), disabled: !els.some(e => e.children), onclick: () => O.ungroup() }, { label: 'Use as mask', icon: 'circle-dot', keys: K('mask'), disabled: els.length < 2, onclick: () => O.useAsMask() },
       { label: 'Combine shapes', icon: 'merge', disabled: els.length < 2, sub: [['unite', 'Union'], ['subtract', 'Subtract'], ['intersect', 'Intersect'], ['exclude', 'Exclude']].map(([a, l]) => ({ label: l, onclick: () => O.boolean(a) })) }, { label: 'Flatten', icon: 'layers', keys: K('flatten'), onclick: () => O.flatten() }, { label: 'Convert to path', icon: 'spline', disabled: !one || one.type === 'path' || one.type === 'text', onclick: () => O.outline() }, { label: 'Frame selection', icon: 'frame', onclick: () => O.group('frame') },
@@ -173,7 +173,7 @@
   };
   UI.help = function () {
     const map = [['Create a design', 'File, New design'], ['Magic Resize', 'Resize button'], ['Magic Eraser, Magic Grab', 'Edit photo, Tools panel'], ['Brand Kit', 'Brand panel'], ['Pages', 'Strip at the bottom'], ['Apps', 'Apps panel'], ['Position, Animate', 'Context bar'], ['Layers', 'Advanced mode, right panel']];
-    UI.modal({ title: 'Coming from Canva', width: 520, body: [h('table.info', map.map(r => h('tr', h('th', T(r[0])), h('td', T(r[1]))))), h('div.row.end', UI.btn('Keyboard shortcuts', () => UI.shortcuts()), UI.btn('Switch to advanced mode', () => { OC.settings.set('mode', 'advanced'); }))], actions: [{ label: 'Done', primary: true }] });
+    const hm = UI.modal({ title: 'Coming from Canva', width: 520, body: [h('table.info', map.map(r => h('tr', h('th', T(r[0])), h('td', T(r[1]))))), h('div.row.end', UI.btn('Keyboard shortcuts', () => UI.shortcuts()), UI.btn('Switch to advanced mode', () => { hm.close(); if (!S.project) { U.toast('Open a design to see advanced tools'); return; } OC.settings.set('mode', 'advanced'); U.toast('Advanced tools on'); }))], actions: [{ label: 'Done', primary: true }] });
   };
   UI.shortcuts = function () {
     const groups = {}; Object.values(C.list).filter(c => !c.hidden && C.keysFor(c.id).length).forEach(c => { (groups[c.group || 'Edit'] = groups[c.group || 'Edit'] || []).push(c); });

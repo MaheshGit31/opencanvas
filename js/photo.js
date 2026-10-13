@@ -151,6 +151,12 @@
   Ph.pingServer = async function () { try { const r = await fetch(base() + '/v1/health', { headers: headers() }); return r.ok ? await r.json().catch(() => ({ ok: true })) : false; } catch (e) { return false; } };
   Ph.serverMsg = function (j) { if (!j) return 'Cannot reach server'; const m = { OWNER: 'Connected with your key', FULL: 'Open to everyone', LIMITED: 'Open with limits', NONE: 'Private. Add the owner key' }; return m[j.access] || 'Server ready'; };
   async function post(path, fields) { const fd = new FormData(); for (const k in fields) fd.append(k, fields[k]); const r = await fetch(base() + path, { method: 'POST', body: fd, headers: headers() }); if (!r.ok) { let m = 'Server said ' + r.status; try { const j = await r.json(); if (j.message) m = j.message; } catch (e) { } throw new Error(m); } return r; }
+  function busyOn(el, msg) {
+    const E = OC.editor, D = OC.doc, f = D.find(el.id); if (!f || !E.stage) return busy(msg);
+    const ov = h('div.scan-ov', h('i.b1'), h('i.b2'), h('i.b3')); E.stage.append(ov);
+    const place = () => { const c = D.toPage(el.id, el.w / 2, el.h / 2), s = E.pgToScreen(f.page, c.x, c.y), z = OC.S.zoom; ov.style.cssText = `left:${s.x - el.w * z / 2}px;top:${s.y - el.h * z / 2}px;width:${el.w * z}px;height:${el.h * z}px;transform:rotate(${el.rot || 0}deg)`; };
+    place(); const iv = setInterval(place, 100); return () => { clearInterval(iv); ov.classList.add('out'); setTimeout(() => ov.remove(), 250); };
+  }
   function busy(msg) { const t = h('div.busy', h('div.spinner'), h('span', T(msg))); document.body.append(t); return () => t.remove(); }
   async function srcCanvas(el, maxDim = 2000) { const img = OC.assets.img(el.src); if (!img) throw new Error('Image is still loading'); return work(img, img.naturalWidth, img.naturalHeight, maxDim); }
   async function setSrc(el, canvas, label) { const blob = await U.canvasBlob(canvas); const id = await OC.assets.add(blob, (el.name || 'Photo') + '.png'); el.src = 'asset:' + id; if (el.type === 'image') el.adj = el.adj || {}; OC.history.commit(label); R.invalidate(); }
@@ -174,7 +180,7 @@
     catch (e) { console.warn('model unavailable, using lite mode', e); U.toast('Model could not load, used quick mode'); return liteRemove(c); }
   };
   Ph.removeBackground = async function (el) {
-    if (el.type !== 'image') { U.toast('Select a photo first'); return; } await waitImg(el); const done = busy('Removing background'); try { const res = await Ph.cutout(el); const c = U.newCanvas(res.width || res.naturalWidth, res.height || res.naturalHeight); c.getContext('2d').drawImage(res, 0, 0); await setSrc(el, c, 'Remove background'); } catch (e) { console.error(e); U.toast('Could not remove the background'); } finally { done(); }
+    if (el.type !== 'image') { U.toast('Select a photo first'); return; } await waitImg(el); const done = busyOn(el, 'Removing background'); try { const res = await Ph.cutout(el); const c = U.newCanvas(res.width || res.naturalWidth, res.height || res.naturalHeight); c.getContext('2d').drawImage(res, 0, 0); await setSrc(el, c, 'Remove background'); } catch (e) { console.error(e); U.toast('Could not remove the background'); } finally { done(); }
   };
   Ph.magicGrab = async function (el) {
     await waitImg(el); const done = busy('Lifting the subject'); try {
