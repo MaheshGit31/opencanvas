@@ -243,6 +243,42 @@
   R.thumb = function (page, max = 200) {
     const s = max / Math.max(page.w, page.h, 1); return R.renderPage(page, { scale: Math.min(s, 1), t: 0 });
   };
+
+  /* ---------- page transitions ---------- */
+  R.TRANSITIONS = [['none', 'None'], ['fade', 'Fade'], ['dissolve', 'Dissolve'], ['slide', 'Slide'], ['slide-up', 'Slide up'], ['zoom', 'Zoom'], ['wipe', 'Wipe']];
+  const eio = t => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+  /* draw canvas A (outgoing) and B (incoming) blended at progress p (0 to 1) */
+  R.drawTransition = function (g, A, B, kind, p, W, H) {
+    p = Math.max(0, Math.min(1, p)); const e = eio(p); g.save(); g.clearRect(0, 0, W, H);
+    switch (kind) {
+      case 'slide': g.drawImage(A, -e * W, 0, W, H); g.drawImage(B, (1 - e) * W, 0, W, H); break;
+      case 'slide-up': g.drawImage(A, 0, -e * H, W, H); g.drawImage(B, 0, (1 - e) * H, W, H); break;
+      case 'zoom': g.globalAlpha = 1 - e; g.translate(W / 2, H / 2); g.scale(1 + e * .25, 1 + e * .25); g.drawImage(A, -W / 2, -H / 2, W, H); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = e; g.translate(W / 2, H / 2); g.scale(.85 + e * .15, .85 + e * .15); g.drawImage(B, -W / 2, -H / 2, W, H); break;
+      case 'wipe': g.drawImage(A, 0, 0, W, H); g.beginPath(); g.rect(0, 0, W * e, H); g.clip(); g.drawImage(B, 0, 0, W, H); break;
+      case 'dissolve': g.drawImage(A, 0, 0, W, H); g.globalAlpha = e; g.translate(W / 2, H / 2); g.scale(1.03 - e * .03, 1.03 - e * .03); g.drawImage(B, -W / 2, -H / 2, W, H); break;
+      default: g.drawImage(A, 0, 0, W, H); g.globalAlpha = e; g.drawImage(B, 0, 0, W, H);
+    }
+    g.restore();
+  };
+  /* sequence of pages on one timeline; a page's transition overlaps the end of the page before it */
+  R.projectLayout = function (proj) {
+    const segs = []; let end = 0;
+    (proj.pages || []).forEach((pg, i) => {
+      const td = i && pg.transition && pg.transition !== 'none' ? Math.min(pg.transitionDur == null ? .6 : pg.transitionDur, segs[i - 1].dur / 2, pg.duration / 2) : 0;
+      const start = i ? segs[i - 1].end - td : 0; const seg = { pg, i, start, dur: pg.duration, end: start + pg.duration, td }; segs.push(seg); end = seg.end;
+    });
+    return { segs, total: end };
+  };
+  /* draw whatever is on screen at global time gt; returns { i, t, blend } */
+  R.drawProjectFrame = function (g, proj, gt, scale, W, H) {
+    const L = R.projectLayout(proj); gt = Math.max(0, Math.min(L.total, gt)); let idx = L.segs.findIndex(s => gt >= s.start && gt < s.end); if (idx < 0) idx = L.segs.length - 1; const s = L.segs[idx]; const nx = L.segs[idx + 1];
+    if (nx && nx.td && gt >= nx.start) {
+      const mk = (sg, t) => R.renderPage(sg.pg, { scale, t, noSync: true }); const A = mk(s, gt - s.start), B = mk(nx, gt - nx.start);
+      R.drawTransition(g, A, B, nx.pg.transition, (gt - nx.start) / nx.td, W, H); return { i: gt - nx.start > nx.td / 2 ? nx.i : s.i, t: gt - s.start, blend: true };
+    }
+    g.clearRect(0, 0, W, H); g.save(); g.scale(scale, scale); R.drawPage(g, s.pg, { t: gt - s.start, scale, noSync: true }); g.restore(); return { i: s.i, t: gt - s.start, blend: false };
+  };
+
   /* element only render (download selection, symbols, etc) */
   R.renderElements = function (els, opts = {}) {
     const b = D.boundsOf(els); const pad = opts.pad || 0; const s = opts.scale || 1; const c = U.newCanvas((b.w + pad * 2) * s, (b.h + pad * 2) * s); const g = c.getContext('2d'); g._noClamp = true; g.scale(s, s); g.translate(-b.x + pad, -b.y + pad);

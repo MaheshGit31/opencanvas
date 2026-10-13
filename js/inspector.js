@@ -4,7 +4,7 @@
   const T = s => OC.t(s); const IN = OC.inspector = { cur: 'design', collapsed: {} };
   const apply = (...a) => OC.ctxbar.apply(...a);
 
-  IN.tab = function (t) { IN.cur = t; if (UI.refs) UI.refs.insp.hidden = false; IN.render(); };
+  IN.tab = function (t) { IN.cur = t; if (UI.refs) UI.refs.insp.hidden = false; UI.refs.inspRes.hidden = false; IN.render(); };
   IN.render = U.debounce(function () { IN.renderNow(); }, 30);
   IN.renderNow = function () {
     const host = UI.refs && UI.refs.insp; if (!host) return; if (host.contains(document.activeElement) && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) && IN._busy) return;
@@ -63,7 +63,7 @@
   function pageDesign(body) {
     const pg = OC.page(); if (!pg) return;
     body.append(UI.section('Page', h('div', UI.field('Title', h('input.input', { value: pg.title || '', placeholder: T('Add page title'), onkeydown: e => e.stopPropagation(), onchange: e => { pg.title = e.target.value; OC.history.commit('Rename page'); } })), pg.infinite ? '' : h('div.grid2', UI.num(pg.w, v => { O.resizePage(pg, Math.round(v), pg.h, 'keep'); D.layoutPages(); OC.history.commit('Resize page'); }, { label: 'W', dec: 0, min: 1, scrub: false }), UI.num(pg.h, v => { O.resizePage(pg, pg.w, Math.round(v), 'keep'); D.layoutPages(); OC.history.commit('Resize page'); }, { label: 'H', dec: 0, min: 1, scrub: false })),
-      UI.field('Duration', UI.num(pg.duration, v => { pg.duration = v; OC.history.commit('Duration'); }, { unit: 's', w: 80, step: .5, dec: 1, min: .5 })), UI.field('Transition', UI.select(['none', 'fade', 'slide', 'zoom', 'wipe', 'dissolve'].map(x => [x, x[0].toUpperCase() + x.slice(1)]), pg.transition || 'none', v => { pg.transition = v; OC.history.commit('Transition'); })), UI.field('Locked', UI.toggle(pg.locked, () => O.lockPage(S.project.pages.indexOf(pg)))))));
+      UI.field('Duration', UI.num(pg.duration, v => { pg.duration = v; OC.history.commit('Duration'); }, { unit: 's', w: 80, step: .5, dec: 1, min: .5 })), UI.field('Transition', UI.select(OC.render.TRANSITIONS, pg.transition || 'none', v => { pg.transition = v; OC.history.commit('Transition'); })), UI.field('Length', UI.num(pg.transitionDur == null ? .6 : pg.transitionDur, v => { pg.transitionDur = Math.max(.1, v); OC.history.commit('Transition length'); }, { unit: 's', w: 80, step: .1, dec: 1, min: .1, max: 3 })), UI.field('Locked', UI.toggle(pg.locked, () => O.lockPage(S.project.pages.indexOf(pg)))))));
     body.append(UI.section('Background', OC.ctxbar.pageFill(pg)));
     body.append(UI.section('Brand colors', h('div.swatches', S.project.brand.colors.map(c => h('button.swatch', { style: 'background:' + c, title: c, onclick: () => { pg.bg = { type: 'solid', color: c }; OC.history.commit('Background'); } })))));
     body.append(UI.section('Notes', h('textarea.input.notes', { rows: 4, placeholder: T('Speaker notes'), onkeydown: e => e.stopPropagation(), onchange: e => { pg.notes = e.target.value; OC.history.commit('Notes'); } }, pg.notes || ''), { open: false }));
@@ -118,5 +118,5 @@
         h('div.row', UI.btn('Reply', async () => { const v = await UI.prompt(T('Reply'), ''); if (v) { (c.replies = c.replies || []).push({ author: 'You', text: v }); OC.history.commit('Reply'); } }), UI.btn(c.resolved ? 'Reopen' : 'Resolve', () => { c.resolved = !c.resolved; OC.history.commit('Resolve'); }), UI.btn('Go to', () => { const pgI = S.project.pages.findIndex(p => p.id === c.pageId); if (pgI >= 0) E.focusPage(pgI); if (c.elId && D.get(c.elId)) OC.sel.set([c.elId]); }), UI.iconBtn('trash-2', 'Delete', () => { S.project.comments.splice(i, 1); OC.history.commit('Delete comment'); }))));
     });
   }
-  OC.bus.on('comment-focus', id => { IN.cur = 'comments'; UI.refs.insp.hidden = false; OC.settings.set('mode', 'advanced'); IN.renderNow(); });
+  OC.bus.on('comment-focus', id => { IN.cur = 'comments'; UI.refs.insp.hidden = false; UI.refs.inspRes.hidden = false; OC.settings.set('mode', 'advanced'); IN.renderNow(); });
 })();

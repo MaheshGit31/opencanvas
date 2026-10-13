@@ -102,6 +102,7 @@
     parts.push(k); return parts.join('+');
   }
   C.combo = combo;
+  C.pre = [];
   C.dispatch = function (e) {
     const t = e.target; const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
     const cb = combo(e); if (!cb) return;
@@ -109,6 +110,7 @@
       if (!/^mod\+(s|enter)$|^escape$/.test(cb)) return; if (t.isContentEditable && cb === 'mod+s') { } else if (cb === 'escape') return;
     }
     if (OC.ui && OC.ui.modalOpen && OC.ui.modalOpen() && cb !== 'escape') return;
+    if (!typing || cb === 'escape') for (const f of C.pre) { try { if (f(e, cb)) { e.preventDefault(); e.stopImmediatePropagation(); return; } } catch (err) { console.error(err); } }
     for (const id in C.list) { const c = C.list[id]; if (c.scope && !c.scope()) continue; if (C.keysFor(id).includes(cb)) { if (c.when && !c.when()) continue; e.preventDefault(); c.run(e); return; } }
   };
   window.addEventListener('keydown', C.dispatch, true);

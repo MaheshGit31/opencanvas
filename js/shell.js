@@ -9,21 +9,37 @@
     refs.root = root; root.textContent = '';
     refs.top = h('header.topbar'); refs.rail = h('nav.rail'); refs.panel = h('aside.panel'); refs.ctx = h('div.ctxbar', { 'data-keep-edit': '1' }); refs.canvas = h('div.canvas-wrap'); refs.tl = h('div.timeline-host'); refs.pages = h('div.pagebar'); refs.insp = h('aside.inspector', { 'data-keep-edit': '1' }); refs.modeHost = h('div.mode-host'); refs.home = h('div.home');
     refs.center = h('main.center', refs.ctx, refs.canvas, refs.tl, refs.pages, refs.modeHost);
-    refs.work = h('div.work', refs.rail, refs.panel, refs.center, refs.insp);
+    const sizer = (cls, cssVar, key, min, max, def, dirPanel) => {
+      const root = document.documentElement; root.style.setProperty(cssVar, OC.ls.get(key, def) + 'px');
+      const r = h('i.res-x.' + cls, { title: T('Drag to resize'), ondblclick: () => { root.style.setProperty(cssVar, def + 'px'); OC.ls.set(key, def); OC.render.invalidate(); } });
+      r.addEventListener('pointerdown', ev => {
+        ev.preventDefault(); const x0 = ev.clientX, w0 = parseFloat(getComputedStyle(root).getPropertyValue(cssVar)) || def; const right = OC.settings.sidebarSide === 'right'; const sign = (dirPanel ? 1 : -1) * (right ? -1 : 1); r.setPointerCapture(ev.pointerId); r.classList.add('on'); document.body.classList.add('resizing');
+        r.onpointermove = e2 => { const w = U.clamp(w0 + sign * (e2.clientX - x0), min, max); root.style.setProperty(cssVar, w + 'px'); OC.render.invalidate(); };
+        r.onpointerup = () => { r.onpointermove = null; r.classList.remove('on'); document.body.classList.remove('resizing'); OC.ls.set(key, parseFloat(getComputedStyle(root).getPropertyValue(cssVar))); OC.render.invalidate(); };
+      }); return r;
+    };
+    refs.panelRes = sizer('panel-res', '--panel-w', 'panelW', 240, 560, 300, true); refs.inspRes = sizer('insp-res', '--insp-w', 'inspW', 220, 480, 264, false);
+    refs.work = h('div.work', refs.rail, refs.panel, refs.panelRes, refs.center, refs.inspRes, refs.insp);
     root.append(refs.top, refs.work, refs.home); UI.refs = refs;
     E.init(refs.canvas); buildDock(); buildZoomHud();
     renderTop(); renderRail(); renderPageBar(); OC.ctxbar && OC.ctxbar.render(); OC.inspector && OC.inspector.render();
     ['changed', 'restored', 'history'].forEach(ev => OC.bus.on(ev, () => { renderTopState(); pageThumbsDebounced(); }));
-    OC.bus.on('page-changed', () => { markPages(); OC.ctxbar.render(); }); OC.bus.on('zoom', updateZoomHud); OC.bus.on('tool', updateDock);
+    OC.bus.on('page-changed', () => { markPages(); OC.ctxbar.render(); }); OC.bus.on('zoom', updateZoomHud); OC.bus.on('tool', updateDock); OC.bus.on('tool', toolHint);
     OC.bus.on('settings', k => { if (k === 'mode') { applyMode(); } if (['lang', 'sidebarSide', 'theme'].includes(k)) { } }); applyMode();
   };
   UI.refreshAll = function () { if (!refs.root) return; renderTop(); renderRail(); renderPageBar(); buildDock(); OC.ctxbar.render(); OC.inspector.render(); if (UI.curPanel) UI.openPanel(UI.curPanel, UI.curPanelOpts); OC.editor.buildHeads && S.project && OC.editor.buildHeads(); OC.bus.emit('i18n'); };
-  function applyMode() { document.documentElement.dataset.mode = OC.settings.mode; refs.insp && (refs.insp.hidden = OC.settings.mode !== 'advanced' || S.home || !isCanvas()); renderTop(); buildDock(); OC.ctxbar && OC.ctxbar.render(); OC.inspector && OC.inspector.render(); setTimeout(() => OC.editor.paint && OC.render.invalidate(), 60); }
+  const HINTS = { comment: ['message-square-plus', 'Click anywhere to leave a comment'], text: ['type', 'Click or drag to add text'], pen: ['pen-tool', 'Click to add points, Enter to finish'], frame: ['frame', 'Drag to draw a frame'], sticky: ['sticker', 'Click to place a sticky note'], pencil: ['pencil', 'Drag to draw'] };
+  function toolHint() {
+    if (!refs.canvas) return; let el = U.$('.tool-hint', refs.canvas); const hnt = HINTS[S.tool]; if (!hnt) { if (el) el.remove(); refs.canvas.classList.remove('tool-comment'); return; }
+    refs.canvas.classList.toggle('tool-comment', S.tool === 'comment');
+    if (!el) { el = h('div.tool-hint'); refs.canvas.append(el); } el.textContent = ''; el.append(h('span', { html: OC.icon(hnt[0], 14) }), h('span', T(hnt[1])), h('kbd', 'Esc')); el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
+  }
+  function applyMode() { document.documentElement.dataset.mode = OC.settings.mode; refs.insp && (refs.insp.hidden = OC.settings.mode !== 'advanced' || S.home || !isCanvas()); refs.inspRes && (refs.inspRes.hidden = refs.insp.hidden); renderTop(); buildDock(); OC.ctxbar && OC.ctxbar.render(); OC.inspector && OC.inspector.render(); setTimeout(() => OC.editor.paint && OC.render.invalidate(), 60); }
   const isCanvas = () => S.project && (S.project.mode === 'design' || S.project.mode === 'whiteboard');
   UI.isCanvas = isCanvas;
   UI.onProjectOpen = function () {
     S.home = false; refs.root.classList.remove('is-home'); const canvasMode = isCanvas(); refs.root.dataset.kind = canvasMode ? 'canvas' : 'other';
-    refs.insp.hidden = OC.settings.mode !== 'advanced' || !canvasMode;
+    refs.insp.hidden = OC.settings.mode !== 'advanced' || !canvasMode; refs.inspRes.hidden = refs.insp.hidden;
     if (canvasMode) { refs.modeHost.textContent = ''; if (OC.modes && OC.modes.unmount) OC.modes.unmount(); OC.editor.buildHeads(); D.layoutPages(); OC.editor.fit(); UI.closePanel(); if (S.project.video || S.project.pages.some(p => p.elements.some(e => OC.render.hasAnim(e)))) UI.toggleTimeline(true, true); else UI.toggleTimeline(false, true); if (S.project.photo) UI.openPanel('photo'); renderPageBar(); }
     else { UI.closePanel(); OC.modes.mount(S.project, refs.modeHost); }
     renderTop(); OC.ctxbar.render(); OC.inspector.render(); OC.render.invalidate();
@@ -93,12 +109,12 @@
     });
   }
   UI.openPanel = function (id, opts) {
-    const p = UI.panels[id]; if (!p) return; UI.curPanel = id; UI.curPanelOpts = opts; const host = refs.panel; host.textContent = ''; host.classList.add('open');
+    const p = UI.panels[id]; if (!p) return; UI.curPanel = id; UI.curPanelOpts = opts; const host = refs.panel; host.textContent = ''; host.classList.add('open'); refs.panelRes && refs.panelRes.classList.add('show');
     host.append(h('div.panel-head', h('h3', T(p.title)), h('button.icon-btn', { onclick: () => UI.closePanel(), html: OC.icon('chevron-left', 18), title: T('Hide') })), h('div.panel-body'));
     try { p.render(host.lastChild, opts || {}); } catch (e) { console.error(e); host.lastChild.append(UI.empty('Something went wrong')); }
     U.$$('.rail-item', refs.rail).forEach(b => b.classList.toggle('on', b.dataset.id === id)); setTimeout(() => OC.render.invalidate(), 250);
   };
-  UI.closePanel = function () { UI.curPanel = null; refs.panel && refs.panel.classList.remove('open'); refs.panel && (refs.panel.textContent = ''); U.$$('.rail-item', refs.rail || document).forEach(b => b.classList.remove('on')); OC.photo && OC.photo.leavePanel && OC.photo.leavePanel(); setTimeout(() => OC.render.invalidate(), 250); };
+  UI.closePanel = function () { UI.curPanel = null; refs.panel && refs.panel.classList.remove('open'); refs.panelRes && refs.panelRes.classList.remove('show'); refs.panel && (refs.panel.textContent = ''); U.$$('.rail-item', refs.rail || document).forEach(b => b.classList.remove('on')); OC.photo && OC.photo.leavePanel && OC.photo.leavePanel(); setTimeout(() => OC.render.invalidate(), 250); };
 
   /* ---------- floating tool dock ---------- */
   const DOCK = [['select', 'mouse-pointer-2', 'Select'], ['hand', 'hand', 'Hand'], ['text', 'type', 'Text'], ['shape', 'square', 'Shapes'], ['line', 'minus', 'Line'], ['pen', 'pen-tool', 'Pen', 'adv'], ['pencil', 'pencil', 'Draw'], ['frame', 'frame', 'Frame', 'adv'], ['sticky', 'sticker', 'Sticky note', 'wb'], ['comment', 'message-square-plus', 'Comment', 'adv']];
@@ -137,7 +153,7 @@
   }
   UI.renderPageBar = renderPageBar;
   function markPages() { U.$$('.pg-card', refs.pages).forEach((c, i) => c.classList.toggle('on', i === S.pageIdx)); }
-  UI.toggleTimeline = function (v, quiet) { S.timelineOpen = v == null ? !S.timelineOpen : v; refs.tl.classList.toggle('open', S.timelineOpen); if (S.timelineOpen && OC.timeline) OC.timeline.mount(refs.tl); else if (OC.timeline) OC.timeline.unmount(); const b = U.$('.tl-btn', refs.pages); b && b.classList.toggle('on', S.timelineOpen); OC.render.invalidate(); if (!quiet) setTimeout(() => OC.render.invalidate(), 200); };
+  UI.toggleTimeline = function (v, quiet) { S.timelineOpen = v == null ? !S.timelineOpen : v; refs.tl.classList.toggle('open', S.timelineOpen); refs.tl.style.height = S.timelineOpen ? (OC.ls.get('tlH', 260) + 'px') : ''; if (S.timelineOpen && OC.timeline) OC.timeline.mount(refs.tl); else if (OC.timeline) OC.timeline.unmount(); const b = U.$('.tl-btn', refs.pages); b && b.classList.toggle('on', S.timelineOpen); OC.render.invalidate(); if (!quiet) setTimeout(() => OC.render.invalidate(), 200); };
 
   /* ---------- context menu ---------- */
   UI.contextMenu = function (x, y, kind, p) {

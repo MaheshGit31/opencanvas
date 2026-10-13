@@ -13,7 +13,7 @@
     over.addEventListener('pointerdown', onDown); over.addEventListener('pointermove', onMove); over.addEventListener('pointerup', onUp); over.addEventListener('pointercancel', onUp);
     over.addEventListener('dblclick', onDbl); over.addEventListener('contextmenu', onCtx); stage.addEventListener('wheel', onWheel, { passive: false });
     stage.addEventListener('dragover', e => { e.preventDefault(); }); stage.addEventListener('drop', onDrop);
-    window.addEventListener('keydown', e => { if (e.key === ' ' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) && !e.target.isContentEditable) { E.space = true; over.style.cursor = 'grab'; e.preventDefault(); } });
+    window.addEventListener('keydown', e => { if (e.key === ' ' && !e.defaultPrevented && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) && !e.target.isContentEditable) { E.space = true; over.style.cursor = 'grab'; e.preventDefault(); } });
     window.addEventListener('keyup', e => { if (e.key === ' ') { E.space = false; over.style.cursor = ''; } });
     window.addEventListener('paste', onPaste);
     R.onPaint = paint;

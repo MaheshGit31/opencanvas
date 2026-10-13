@@ -182,6 +182,12 @@
 
   /* ---------- comment tool ---------- */
   E.tools.comment = {
+    hover(p) { E.cursorPt = { x: p.px, y: p.py, pg: p.pg }; E.paintOverlay(); },
+    over(ctx, acc, toS) {
+      const c = E.cursorPt; if (!c || !c.pg || S.tool !== 'comment') return; const s = toS(c.pg, c.x, c.y); ctx.save(); ctx.translate(s.x, s.y); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(22, -22, 17, 0, Math.PI * 2); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(6, -16); ctx.lineTo(18, -8); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(22, -29); ctx.lineTo(22, -15); ctx.moveTo(15, -22); ctx.lineTo(29, -22); ctx.stroke(); ctx.restore();
+    },
     down(p) {
       const hit = E.hitComment(p); if (hit) { OC.bus.emit('comment-focus', hit.id); return; }
       const el = E.hitAt(p.pg, p.px, p.py, false, true); let pos = { x: p.px, y: p.py };
