@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:14px system-ui,sans-serif;margin:0;padding:14px;color:#222}@media(prefers-color-scheme:dark){body{color:#eee}}
+.sw{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.sw i{width:42px;height:42px;border-radius:12px;box-shadow:inset 0 0 0 1px #0003}
+button{font:inherit;padding:8px 10px;border-radius:10px;border:0;background:#2563eb;color:#fff;width:100%;font-weight:600;cursor:pointer;margin-bottom:8px}p{opacity:.7}</style>
+<p id="hint">Select something on the page</p><div class="sw" id="sw"></div><button id="shuf">Shuffle these colors</button>
+<script>
+let cols=[],ids=[];
+async function read(sel){ids=sel.map(e=>e.id);const s=new Set();const walk=e=>{(e.fills||[]).forEach(f=>{if(f.type==="solid")s.add(f.color);(f.stops||[]).forEach(t=>s.add(t.c))});e.stroke&&e.stroke.color&&s.add(e.stroke.color);(e.children||[]).forEach(walk)};sel.forEach(walk);cols=[...s];
+sw.innerHTML=cols.map(c=>`<i style="background:${c}" title="${c}"></i>`).join("");hint.textContent=cols.length?cols.length+" colors":"Select something on the page"}
+OpenCanvas.onSelection(read);
+shuf.onclick=async()=>{if(cols.length<2)return;const sel=await OpenCanvas.getSelection();const map={};const sh=cols.slice().sort(()=>Math.random()-.5);cols.forEach((c,i)=>map[c]=sh[i]);
+const fix=e=>{(e.fills||[]).forEach(f=>{if(f.type==="solid")f.color=map[f.color]||f.color;(f.stops||[]).forEach(t=>t.c=map[t.c]||t.c)});if(e.stroke&&map[e.stroke.color])e.stroke.color=map[e.stroke.color];(e.children||[]).forEach(fix)};
+sel.forEach(fix);OpenCanvas.updateSelection(sel.map(e=>({id:e.id,props:{fills:e.fills,stroke:e.stroke,children:e.children}})))};
+</script>
