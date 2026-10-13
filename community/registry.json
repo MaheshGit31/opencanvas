@@ -1,0 +1,12 @@
+{
+  "name": "OpenCanvas built in",
+  "version": 1,
+  "templates": [
+    { "id": "hello-card", "name": "Hello card", "author": "OpenCanvas", "cats": ["social"], "tags": ["greeting", "simple"], "file": "templates/hello-card/template.json", "thumb": "templates/hello-card/thumb.svg", "license": "CC0-1.0" }
+  ],
+  "apps": [
+    { "id": "lorem", "name": "Lorem ipsum", "author": "OpenCanvas", "desc": "Fill your design with placeholder text", "icon": "text", "entry": "apps/lorem/index.html", "permissions": ["insert", "selection.read", "selection.write"], "version": "1.0.0" },
+    { "id": "pattern", "name": "Pattern maker", "author": "OpenCanvas", "desc": "Make seamless looking patterns as vectors", "icon": "grid-3x3", "entry": "apps/pattern/index.html", "permissions": ["insert", "palette"], "version": "1.0.0" },
+    { "id": "palette", "name": "Palette from selection", "author": "OpenCanvas", "desc": "Pull colors out of what you select", "icon": "palette", "entry": "apps/palette/index.html", "permissions": ["selection.read", "selection.write"], "version": "1.0.0" }
+  ]
+}
