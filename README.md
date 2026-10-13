@@ -29,6 +29,8 @@ Open http://localhost:8080. Any static host works, including GitHub Pages.
 
 Pick on device or server in Settings.
 
+Hosting for others? Set `PUBLIC_SERVER_ACCESS` to NONE, LIMITED or FULL. See `docs/HOSTING.md`.
+
 On device uses in browser models and falls back to a light version when offline. On server uses the reference API in `server/`.
 
 ```
