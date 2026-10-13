@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:14px system-ui,sans-serif;margin:0;padding:14px;color:#222;background:transparent}@media(prefers-color-scheme:dark){body{color:#eee}}
+select,button,input{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid #8884;background:#8881;color:inherit;width:100%;box-sizing:border-box;margin-bottom:8px}button{background:#2563eb;color:#fff;border:0;font-weight:600;cursor:pointer}</style>
+<label>Length</label><select id="n"><option value="1">One sentence</option><option value="2" selected>Short paragraph</option><option value="4">Long paragraph</option></select>
+<button id="ins">Add as text</button><button id="rep">Fill selected text</button>
+<script>
+const W="lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure in reprehenderit voluptate velit esse cillum fugiat nulla pariatur".split(" ");
+function sentence(){const n=8+Math.floor(Math.random()*8);let s=[];for(let i=0;i<n;i++)s.push(W[Math.floor(Math.random()*W.length)]);s=s.join(" ");return s[0].toUpperCase()+s.slice(1)+"."}
+const make=()=>Array.from({length:+n.value},sentence).join(" ");
+ins.onclick=()=>OpenCanvas.insertText(make(),{fs:40,w:700});
+rep.onclick=async()=>{const sel=(await OpenCanvas.getSelection()).filter(e=>e.type==="text");if(!sel.length)return OpenCanvas.toast("Select a text first");
+OpenCanvas.updateSelection(sel.map(e=>({id:e.id,props:{runs:[{t:make()}]}})))};
+</script>
