@@ -299,3 +299,54 @@ code{font:.85em ui-monospace,monospace;background:var(--panel-2);padding:2px 6px
 .set-body{display:block;flex:1;min-width:0;min-height:0;max-height:60vh;overflow:auto}
 .set-row{flex-wrap:wrap}
 .set-row small{display:block;color:var(--muted);font-weight:400;margin-top:2px}
+
+/* ---------- polish: motion, focus, scroll ---------- */
+:root{--ease:cubic-bezier(.2,.8,.3,1)}
+*{-webkit-tap-highlight-color:transparent}
+button,.chip,.menu-item,.rail-item,.swatch,.seg button,.layer,.tl-bar,.color-btn,.input,select{transition:background-color .12s,color .12s,border-color .12s,box-shadow .15s,transform .1s var(--ease),opacity .15s}
+button:not(:disabled):active,.chip:active,.rail-item:active{transform:scale(.965)}
+.rail-item.on,.rail-item:hover{transition-duration:.08s}
+:focus{outline:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px;border:3px solid transparent;background-clip:content-box}::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:content-box;border:3px solid transparent}::-webkit-scrollbar-track{background:transparent}
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+
+/* things that appear should ease in */
+.popover,.menu{animation:pop-in .14s var(--ease);transform-origin:top left}
+.modal{animation:modal-in .2s var(--ease)}
+.backdrop{animation:fade .18s ease}
+.toast{animation:toast-in .26s var(--ease)}
+.panel-body>*,.set-body>*{animation:fade-up .18s var(--ease) both}
+.panel-body>*:nth-child(2){animation-delay:.02s}.panel-body>*:nth-child(3){animation-delay:.04s}.panel-body>*:nth-child(4){animation-delay:.06s}
+@keyframes pop-in{from{opacity:0;transform:scale(.96) translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes modal-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes toast-in{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes fade-up{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* panel and inspector slide */
+.panel{transition:width .22s var(--ease)}
+.inspector{animation:fade .2s}
+
+/* chips scroll with a soft edge instead of cutting words */
+.chips.scroll{scroll-behavior:smooth;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);padding-right:24px}
+.chips.scroll.at-end{-webkit-mask-image:none;mask-image:none;padding-right:0}
+
+/* tiles lift a little */
+.tile,.el-tile,.shape-btn,.tpl,.thumb,.page-thumb,.home-card,.tpl-card{transition:transform .15s var(--ease),box-shadow .15s,background-color .12s,border-color .12s}
+.tile:hover,.el-tile:hover,.shape-btn:hover,.tpl:hover,.home-card:hover,.tpl-card:hover{transform:translateY(-2px)}
+.tile:active,.el-tile:active,.shape-btn:active,.tpl:active{transform:none}
+
+.dock,.zoomhud{transition:opacity .2s,transform .2s var(--ease)}
+.stage{overscroll-behavior:contain}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.chip{display:inline-flex;align-items:center;gap:6px}
+
+/* layout fixes */
+.row.radius{display:flex;flex-direction:row;align-items:center;gap:8px;margin:0 4px}.row.radius .range{width:110px}
+.fld{min-width:0}.fld-c{min-width:0;flex:1}
+.fld .seg,.inspector .seg{display:flex;width:100%}
+.fld .seg button,.inspector .seg button{flex:1 1 auto;min-width:0;padding:0 6px;justify-content:center}
+.inspector select,.inspector .input{min-width:0;max-width:100%}
+.popover{max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto}
