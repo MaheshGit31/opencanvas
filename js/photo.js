@@ -148,8 +148,9 @@
   const ai = () => OC.settings.ai; const useServer = () => ai().where === 'server' && ai().serverUrl;
   const base = () => ai().serverUrl.replace(/\/$/, '');
   const headers = () => ai().apiKey ? { Authorization: 'Bearer ' + ai().apiKey } : {};
-  Ph.pingServer = async function () { try { const r = await fetch(base() + '/v1/health', { headers: headers() }); return r.ok; } catch (e) { return false; } };
-  async function post(path, fields) { const fd = new FormData(); for (const k in fields) fd.append(k, fields[k]); const r = await fetch(base() + path, { method: 'POST', body: fd, headers: headers() }); if (!r.ok) throw new Error('Server said ' + r.status); return r; }
+  Ph.pingServer = async function () { try { const r = await fetch(base() + '/v1/health', { headers: headers() }); return r.ok ? await r.json().catch(() => ({ ok: true })) : false; } catch (e) { return false; } };
+  Ph.serverMsg = function (j) { if (!j) return 'Cannot reach server'; const m = { OWNER: 'Connected with your key', FULL: 'Open to everyone', LIMITED: 'Open with limits', NONE: 'Private. Add the owner key' }; return m[j.access] || 'Server ready'; };
+  async function post(path, fields) { const fd = new FormData(); for (const k in fields) fd.append(k, fields[k]); const r = await fetch(base() + path, { method: 'POST', body: fd, headers: headers() }); if (!r.ok) { let m = 'Server said ' + r.status; try { const j = await r.json(); if (j.message) m = j.message; } catch (e) { } throw new Error(m); } return r; }
   function busy(msg) { const t = h('div.busy', h('div.spinner'), h('span', T(msg))); document.body.append(t); return () => t.remove(); }
   async function srcCanvas(el, maxDim = 2000) { const img = OC.assets.img(el.src); if (!img) throw new Error('Image is still loading'); return work(img, img.naturalWidth, img.naturalHeight, maxDim); }
   async function setSrc(el, canvas, label) { const blob = await U.canvasBlob(canvas); const id = await OC.assets.add(blob, (el.name || 'Photo') + '.png'); el.src = 'asset:' + id; if (el.type === 'image') el.adj = el.adj || {}; OC.history.commit(label); R.invalidate(); }
